@@ -99,7 +99,6 @@
 		55E5DDD3129332EA00E36302 /* huffman.c in Sources */ = {isa = PBXBuildFile; fileRef = 55E5DDC4129332EA00E36302 /* huffman.c */; };
 		55E5DDD5129332EA00E36302 /* randtable.c in Sources */ = {isa = PBXBuildFile; fileRef = 55E5DDC6129332EA00E36302 /* randtable.c */; };
 		55E5DDDE129333B500E36302 /* libarchive_custom_config.h in Headers */ = {isa = PBXBuildFile; fileRef = 55E5DDDD129333B500E36302 /* libarchive_custom_config.h */; };
-		AA747D9F0F9514B9006C5449 /* arc_Prefix.pch in Headers */ = {isa = PBXBuildFile; fileRef = AA747D9E0F9514B9006C5449 /* arc_Prefix.pch */; };
 		AACBBE4A0F95108600F1A2B1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AACBBE490F95108600F1A2B1 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -202,7 +201,6 @@
 		55E5DDC7129332EA00E36302 /* spewG.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = spewG.c; path = ../bzip2/spewG.c; sourceTree = SOURCE_ROOT; };
 		55E5DDC8129332EA00E36302 /* unzcrash.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = unzcrash.c; path = ../bzip2/unzcrash.c; sourceTree = SOURCE_ROOT; };
 		55E5DDDD129333B500E36302 /* libarchive_custom_config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = libarchive_custom_config.h; sourceTree = "<group>"; };
-		AA747D9E0F9514B9006C5449 /* arc_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = arc_Prefix.pch; sourceTree = SOURCE_ROOT; };
 		AACBBE490F95108600F1A2B1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D2AAC07E0554694100DB518D /* libarc.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libarc.a; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -251,7 +249,6 @@
 			isa = PBXGroup;
 			children = (
 				55E5DDDD129333B500E36302 /* libarchive_custom_config.h */,
-				AA747D9E0F9514B9006C5449 /* arc_Prefix.pch */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";
@@ -376,7 +373,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA747D9F0F9514B9006C5449 /* arc_Prefix.pch in Headers */,
 				55E5DD691293329E00E36302 /* archive_crc32.h in Headers */,
 				55E5DD6A1293329E00E36302 /* archive_endian.h in Headers */,
 				55E5DD6E1293329E00E36302 /* archive_entry_private.h in Headers */,
@@ -536,8 +532,6 @@
 			buildSettings = {
 				DSTROOT = /tmp/arc.dst;
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = arc_Prefix.pch;
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = arc;
 				SKIP_INSTALL = YES;
@@ -548,8 +542,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DSTROOT = /tmp/arc.dst;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = arc_Prefix.pch;
 				INSTALL_PATH = /usr/local/lib;
 				PRODUCT_NAME = arc;
 				SKIP_INSTALL = YES;
