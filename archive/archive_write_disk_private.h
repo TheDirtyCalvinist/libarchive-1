@@ -33,6 +33,11 @@
 #ifndef ARCHIVE_WRITE_DISK_PRIVATE_H_INCLUDED
 #define ARCHIVE_WRITE_DISK_PRIVATE_H_INCLUDED
 
-struct archive_write_disk;
+#include "archive_acl_private.h"
+
+struct tk_archive_write_disk;
+
+int
+tk_archive_write_disk_set_acls(struct archive *, int /* fd */, const char * /* pathname */, struct tk_archive_acl *);
 
 #endif

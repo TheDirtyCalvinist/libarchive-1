@@ -2,7 +2,7 @@
 
 # Quick hack to build libarc.a suitable for both simulator and device.
 
-SDK_VERSION=8.1
+SDK_VERSION=8.2
 
 cd arc
 xcodebuild -sdk iphoneos$SDK_VERSION "ARCHS=armv7 armv7s arm64" clean build

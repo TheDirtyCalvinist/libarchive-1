@@ -33,9 +33,9 @@
 #define FILTER_FORK_H
 
 pid_t
-__archive_create_child(const char *path, int *child_stdin, int *child_stdout);
+__tk_archive_create_child(const char *cmd, int *child_stdin, int *child_stdout);
 
 void
-__archive_check_child(int in, int out);
+__tk_archive_check_child(int in, int out);
 
 #endif

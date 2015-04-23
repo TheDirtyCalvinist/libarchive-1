@@ -49,7 +49,7 @@
 #include "config.h"
 #else
 /* Warn if the library hasn't been (automatically or manually) configured. */
-#error Oops: No config.h and no pre-built configuration in archive_platform.h.
+#error Oops: No config.h and no pre-built configuration in tk_archive_platform.h.
 #endif
 
 /* It should be possible to get rid of this by extending the feature-test

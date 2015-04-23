@@ -44,19 +44,32 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_write_set_format_by_name.c 20116
 static
 struct { const char *name; int (*setter)(struct archive *); } names[] =
 {
+	{ "7zip",	tk_archive_write_set_format_7zip },
 	{ "ar",		tk_archive_write_set_format_ar_bsd },
 	{ "arbsd",	tk_archive_write_set_format_ar_bsd },
 	{ "argnu",	tk_archive_write_set_format_ar_svr4 },
 	{ "arsvr4",	tk_archive_write_set_format_ar_svr4 },
+	{ "bsdtar",	tk_archive_write_set_format_pax_restricted },
+	{ "cd9660",	tk_archive_write_set_format_iso9660 },
 	{ "cpio",	tk_archive_write_set_format_cpio },
+	{ "gnutar",	tk_archive_write_set_format_gnutar },
+	{ "iso",	tk_archive_write_set_format_iso9660 },
+	{ "iso9660",	tk_archive_write_set_format_iso9660 },
 	{ "mtree",	tk_archive_write_set_format_mtree },
+	{ "mtree-classic",	tk_archive_write_set_format_mtree_classic },
 	{ "newc",	tk_archive_write_set_format_cpio_newc },
 	{ "odc",	tk_archive_write_set_format_cpio },
+	{ "oldtar",	tk_archive_write_set_format_v7tar },
 	{ "pax",	tk_archive_write_set_format_pax },
+	{ "paxr",	tk_archive_write_set_format_pax_restricted },
 	{ "posix",	tk_archive_write_set_format_pax },
+	{ "rpax",	tk_archive_write_set_format_pax_restricted },
 	{ "shar",	tk_archive_write_set_format_shar },
 	{ "shardump",	tk_archive_write_set_format_shar_dump },
 	{ "ustar",	tk_archive_write_set_format_ustar },
+	{ "v7tar",	tk_archive_write_set_format_v7tar },
+	{ "v7",		tk_archive_write_set_format_v7tar },
+	{ "xar",	tk_archive_write_set_format_xar },
 	{ "zip",	tk_archive_write_set_format_zip },
 	{ NULL,		NULL }
 };
@@ -72,5 +85,6 @@ tk_archive_write_set_format_by_name(struct archive *a, const char *name)
 	}
 
 	tk_archive_set_error(a, EINVAL, "No such format '%s'", name);
+	a->state = ARCHIVE_STATE_FATAL;
 	return (ARCHIVE_FATAL);
 }

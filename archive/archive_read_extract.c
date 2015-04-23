@@ -40,6 +40,7 @@ __FBSDID("$FreeBSD: src/lib/libarchive/archive_read_extract.c,v 1.61 2008/05/26 
 #endif
 
 #include "archive.h"
+#include "archive_entry.h"
 #include "archive_private.h"
 #include "archive_read_private.h"
 #include "archive_write_disk_private.h"
@@ -52,12 +53,12 @@ struct extract {
 	void			 *extract_progress_user_data;
 };
 
-static int	tk_archive_read_extract_cleanup(struct archive_read *);
+static int	tk_archive_read_extract_cleanup(struct tk_archive_read *);
 static int	copy_data(struct archive *ar, struct archive *aw);
-static struct extract *get_extract(struct archive_read *);
+static struct extract *get_extract(struct tk_archive_read *);
 
 static struct extract *
-get_extract(struct archive_read *a)
+get_extract(struct tk_archive_read *a)
 {
 	/* If we haven't initialized, do it now. */
 	/* This also sets up a lot of global state. */
@@ -74,17 +75,17 @@ get_extract(struct archive_read *a)
 			return (NULL);
 		}
 		tk_archive_write_disk_set_standard_lookup(a->extract->ad);
-		a->cleanup_archive_extract = tk_archive_read_extract_cleanup;
+		a->cleanup_tk_archive_extract = tk_archive_read_extract_cleanup;
 	}
 	return (a->extract);
 }
 
 int
-tk_archive_read_extract(struct archive *_a, struct archive_entry *entry, int flags)
+tk_archive_read_extract(struct archive *_a, struct tk_archive_entry *entry, int flags)
 {
 	struct extract *extract;
 
-	extract = get_extract((struct archive_read *)_a);
+	extract = get_extract((struct tk_archive_read *)_a);
 	if (extract == NULL)
 		return (ARCHIVE_FATAL);
 	tk_archive_write_disk_set_options(extract->ad, flags);
@@ -92,22 +93,23 @@ tk_archive_read_extract(struct archive *_a, struct archive_entry *entry, int fla
 }
 
 int
-tk_archive_read_extract2(struct archive *_a, struct archive_entry *entry,
+tk_archive_read_extract2(struct archive *_a, struct tk_archive_entry *entry,
     struct archive *ad)
 {
-	struct archive_read *a = (struct archive_read *)_a;
+	struct tk_archive_read *a = (struct tk_archive_read *)_a;
 	int r, r2;
 
 	/* Set up for this particular entry. */
-	tk_archive_write_disk_set_skip_file(ad,
-	    a->skip_file_dev, a->skip_file_ino);
+	if (a->skip_file_set)
+		tk_archive_write_disk_set_skip_file(ad,
+		    a->skip_file_dev, a->skip_file_ino);
 	r = tk_archive_write_header(ad, entry);
 	if (r < ARCHIVE_WARN)
 		r = ARCHIVE_WARN;
 	if (r != ARCHIVE_OK)
 		/* If _write_header failed, copy the error. */
  		tk_archive_copy_error(&a->archive, ad);
-	else
+	else if (!tk_archive_entry_size_is_set(entry) || tk_archive_entry_size(entry) > 0)
 		/* Otherwise, pour data into the entry. */
 		r = copy_data(_a, ad);
 	r2 = tk_archive_write_finish_entry(ad);
@@ -115,7 +117,7 @@ tk_archive_read_extract2(struct archive *_a, struct archive_entry *entry,
 		r2 = ARCHIVE_WARN;
 	/* Use the first message. */
 	if (r2 != ARCHIVE_OK && r == ARCHIVE_OK)
- 		tk_archive_copy_error(&a->archive, ad);
+		tk_archive_copy_error(&a->archive, ad);
 	/* Use the worst error return. */
 	if (r2 < r)
 		r = r2;
@@ -126,7 +128,7 @@ void
 tk_archive_read_extract_set_progress_callback(struct archive *_a,
     void (*progress_func)(void *), void *user_data)
 {
-	struct archive_read *a = (struct archive_read *)_a;
+	struct tk_archive_read *a = (struct tk_archive_read *)_a;
 	struct extract *extract = get_extract(a);
 	if (extract != NULL) {
 		extract->extract_progress = progress_func;
@@ -137,20 +139,22 @@ tk_archive_read_extract_set_progress_callback(struct archive *_a,
 static int
 copy_data(struct archive *ar, struct archive *aw)
 {
-	off_t offset;
+	int64_t offset;
 	const void *buff;
 	struct extract *extract;
 	size_t size;
 	int r;
 
-	extract = get_extract((struct archive_read *)ar);
+	extract = get_extract((struct tk_archive_read *)ar);
+	if (extract == NULL)
+		return (ARCHIVE_FATAL);
 	for (;;) {
 		r = tk_archive_read_data_block(ar, &buff, &size, &offset);
 		if (r == ARCHIVE_EOF)
 			return (ARCHIVE_OK);
 		if (r != ARCHIVE_OK)
 			return (r);
-		r = tk_archive_write_data_block(aw, buff, size, offset);
+		r = (int)tk_archive_write_data_block(aw, buff, size, offset);
 		if (r < ARCHIVE_WARN)
 			r = ARCHIVE_WARN;
 		if (r != ARCHIVE_OK) {
@@ -168,14 +172,11 @@ copy_data(struct archive *ar, struct archive *aw)
  * Cleanup function for archive_extract.
  */
 static int
-tk_archive_read_extract_cleanup(struct archive_read *a)
+tk_archive_read_extract_cleanup(struct tk_archive_read *a)
 {
 	int ret = ARCHIVE_OK;
 
-#if ARCHIVE_API_VERSION > 1
-	ret =
-#endif
-	    tk_archive_write_finish(a->extract->ad);
+	ret = tk_archive_write_free(a->extract->ad);
 	free(a->extract);
 	a->extract = NULL;
 	return (ret);

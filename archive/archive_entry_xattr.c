@@ -70,7 +70,7 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_entry_xattr.c 201096 2009-12-28 
  */
 
 void
-tk_archive_entry_xattr_clear(struct archive_entry *entry)
+tk_archive_entry_xattr_clear(struct tk_archive_entry *entry)
 {
 	struct ae_xattr	*xp;
 
@@ -86,7 +86,7 @@ tk_archive_entry_xattr_clear(struct archive_entry *entry)
 }
 
 void
-tk_archive_entry_xattr_add_entry(struct archive_entry *entry,
+tk_archive_entry_xattr_add_entry(struct tk_archive_entry *entry,
 	const char *name, const void *value, size_t size)
 {
 	struct ae_xattr	*xp;
@@ -114,7 +114,7 @@ tk_archive_entry_xattr_add_entry(struct archive_entry *entry,
  * returns number of the extended attribute entries
  */
 int
-tk_archive_entry_xattr_count(struct archive_entry *entry)
+tk_archive_entry_xattr_count(struct tk_archive_entry *entry)
 {
 	struct ae_xattr *xp;
 	int count = 0;
@@ -126,7 +126,7 @@ tk_archive_entry_xattr_count(struct archive_entry *entry)
 }
 
 int
-tk_archive_entry_xattr_reset(struct archive_entry * entry)
+tk_archive_entry_xattr_reset(struct tk_archive_entry * entry)
 {
 	entry->xattr_p = entry->xattr_head;
 
@@ -134,7 +134,7 @@ tk_archive_entry_xattr_reset(struct archive_entry * entry)
 }
 
 int
-tk_archive_entry_xattr_next(struct archive_entry * entry,
+tk_archive_entry_xattr_next(struct tk_archive_entry * entry,
 	const char **name, const void **value, size_t *size)
 {
 	if (entry->xattr_p) {

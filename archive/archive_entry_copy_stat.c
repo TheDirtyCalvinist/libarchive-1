@@ -30,10 +30,11 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_entry_copy_stat.c 189466 2009-03
 #include <sys/stat.h>
 #endif
 
+#include "archive.h"
 #include "archive_entry.h"
 
 void
-tk_archive_entry_copy_stat(struct archive_entry *entry, const struct stat *st)
+tk_archive_entry_copy_stat(struct tk_archive_entry *entry, const struct stat *st)
 {
 #if HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC
 	tk_archive_entry_set_atime(entry, st->st_atime, st->st_atimespec.tv_nsec);
@@ -59,12 +60,13 @@ tk_archive_entry_copy_stat(struct archive_entry *entry, const struct stat *st)
 	tk_archive_entry_set_atime(entry, st->st_atime, 0);
 	tk_archive_entry_set_ctime(entry, st->st_ctime, 0);
 	tk_archive_entry_set_mtime(entry, st->st_mtime, 0);
-#if HAVE_STRUCT_STAT_ST_BIRTHTIME
-	tk_archive_entry_set_birthtime(entry, st->st_birthtime, 0);
-#endif
 #endif
 #if HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC
 	tk_archive_entry_set_birthtime(entry, st->st_birthtime, st->st_birthtimespec.tv_nsec);
+#elif HAVE_STRUCT_STAT_ST_BIRTHTIME
+	tk_archive_entry_set_birthtime(entry, st->st_birthtime, 0);
+#else
+	tk_archive_entry_unset_birthtime(entry);
 #endif
 	tk_archive_entry_set_dev(entry, st->st_dev);
 	tk_archive_entry_set_gid(entry, st->st_gid);

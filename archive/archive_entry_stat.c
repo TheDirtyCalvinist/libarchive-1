@@ -37,11 +37,11 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_entry_stat.c 201100 2009-12-28 0
 #include "archive_entry_private.h"
 
 const struct stat *
-tk_archive_entry_stat(struct archive_entry *entry)
+tk_archive_entry_stat(struct tk_archive_entry *entry)
 {
 	struct stat *st;
 	if (entry->stat == NULL) {
-		entry->stat = malloc(sizeof(*st));
+		entry->stat = calloc(1, sizeof(*st));
 		if (entry->stat == NULL)
 			return (NULL);
 		entry->stat_valid = 0;
@@ -70,12 +70,12 @@ tk_archive_entry_stat(struct archive_entry *entry)
 	st->st_ctime = tk_archive_entry_ctime(entry);
 	st->st_mtime = tk_archive_entry_mtime(entry);
 	st->st_dev = tk_archive_entry_dev(entry);
-	st->st_gid = tk_archive_entry_gid(entry);
-	st->st_uid = tk_archive_entry_uid(entry);
-	st->st_ino = tk_archive_entry_ino64(entry);
+	st->st_gid = (gid_t)tk_archive_entry_gid(entry);
+	st->st_uid = (uid_t)tk_archive_entry_uid(entry);
+	st->st_ino = (ino_t)tk_archive_entry_ino64(entry);
 	st->st_nlink = tk_archive_entry_nlink(entry);
 	st->st_rdev = tk_archive_entry_rdev(entry);
-	st->st_size = tk_archive_entry_size(entry);
+	st->st_size = (off_t)tk_archive_entry_size(entry);
 	st->st_mode = tk_archive_entry_mode(entry);
 
 	/*
@@ -110,7 +110,7 @@ tk_archive_entry_stat(struct archive_entry *entry)
 	/*
 	 * TODO: On Linux, store 32 or 64 here depending on whether
 	 * the cached stat structure is a stat32 or a stat64.  This
-	 * will allow us to support both variants interchangably.
+	 * will allow us to support both variants interchangeably.
 	 */
 	entry->stat_valid = 1;
 

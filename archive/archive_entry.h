@@ -28,6 +28,9 @@
 #ifndef ARCHIVE_ENTRY_H_INCLUDED
 #define	ARCHIVE_ENTRY_H_INCLUDED
 
+/* Note: Compiler will complain if this does not match archive.h! */
+#define	ARCHIVE_VERSION_NUMBER 3001002
+
 /*
  * Note: archive_entry.h is for use outside of libarchive; the
  * configuration headers (config.h, archive_platform.h, etc.) are
@@ -44,38 +47,27 @@
 #include <windows.h>
 #endif
 
-/* Get appropriate definitions of standard POSIX-style types. */
-/* These should match the types used in 'struct stat' */
+/* Get a suitable 64-bit integer type. */
 #if defined(_WIN32) && !defined(__CYGWIN__)
-#define	__LA_INT64_T	__int64
-# if defined(__BORLANDC__)
-#  define	__LA_UID_T	uid_t
-#  define	__LA_GID_T	gid_t
-#  define	__LA_DEV_T	dev_t
-#  define	__LA_MODE_T	mode_t
-# else
-#  define	__LA_UID_T	short
-#  define	__LA_GID_T	short
-#  define	__LA_DEV_T	unsigned int
-#  define	__LA_MODE_T	unsigned short
-# endif
+# define	__LA_INT64_T	__int64
 #else
 #include <unistd.h>
-#define	__LA_INT64_T	int64_t
-#define	__LA_UID_T	uid_t
-#define	__LA_GID_T	gid_t
-#define	__LA_DEV_T	dev_t
-#define	__LA_MODE_T	mode_t
+# if defined(_SCO_DS)
+#  define	__LA_INT64_T	long long
+# else
+#  define	__LA_INT64_T	int64_t
+# endif
 #endif
 
-/*
- * XXX Is this defined for all Windows compilers?  If so, in what
- * header?  It would be nice to remove the __LA_INO_T indirection and
- * just use plain ino_t everywhere.  Likewise for the other types just
- * above.
- */
-#define	__LA_INO_T	ino_t
-
+/* Get a suitable definition for mode_t */
+#if ARCHIVE_VERSION_NUMBER >= 3999000
+/* Switch to plain 'int' for libarchive 4.0.  It's less broken than 'mode_t' */
+# define	__LA_MODE_T	int
+#elif defined(_WIN32) && !defined(__CYGWIN__) && !defined(__BORLANDC__)
+# define	__LA_MODE_T	unsigned short
+#else
+# define	__LA_MODE_T	mode_t
+#endif
 
 /*
  * On Windows, define LIBARCHIVE_STATIC if you're building or using a
@@ -91,7 +83,7 @@
 #  endif
 # else
 #  ifdef __GNUC__
-#   define __LA_DECL	__attribute__((dllimport)) extern
+#   define __LA_DECL
 #  else
 #   define __LA_DECL	__declspec(dllimport)
 #  endif
@@ -121,11 +113,12 @@ extern "C" {
  * applications (e.g., a package manager could attach special
  * package-management attributes to each entry).
  */
-struct archive_entry;
+struct archive;
+struct tk_archive_entry;
 
 /*
- * File-type constants.  These are returned from tk_archive_entry_filetype()
- * and passed to tk_archive_entry_set_filetype().
+ * File-type constants.  These are returned from archive_entry_filetype()
+ * and passed to archive_entry_set_filetype().
  *
  * These values match S_XXX defines on every platform I've checked,
  * including Windows, AIX, Linux, Solaris, and BSD.  They're
@@ -144,24 +137,37 @@ struct archive_entry;
  * portable values to platform-native values when entries are read from
  * or written to disk.
  */
-#define	AE_IFMT		0170000
-#define	AE_IFREG	0100000
-#define	AE_IFLNK	0120000
-#define	AE_IFSOCK	0140000
-#define	AE_IFCHR	0020000
-#define	AE_IFBLK	0060000
-#define	AE_IFDIR	0040000
-#define	AE_IFIFO	0010000
+/*
+ * In libarchive 4.0, we can drop the casts here.
+ * They're needed to work around Borland C's broken mode_t.
+ */
+#define AE_IFMT		((__LA_MODE_T)0170000)
+#define AE_IFREG	((__LA_MODE_T)0100000)
+#define AE_IFLNK	((__LA_MODE_T)0120000)
+#define AE_IFSOCK	((__LA_MODE_T)0140000)
+#define AE_IFCHR	((__LA_MODE_T)0020000)
+#define AE_IFBLK	((__LA_MODE_T)0060000)
+#define AE_IFDIR	((__LA_MODE_T)0040000)
+#define AE_IFIFO	((__LA_MODE_T)0010000)
 
 /*
  * Basic object manipulation
  */
 
-__LA_DECL struct archive_entry	*tk_archive_entry_clear(struct archive_entry *);
+__LA_DECL struct tk_archive_entry	*tk_archive_entry_clear(struct tk_archive_entry *);
 /* The 'clone' function does a deep copy; all of the strings are copied too. */
-__LA_DECL struct archive_entry	*tk_archive_entry_clone(struct archive_entry *);
-__LA_DECL void			 tk_archive_entry_free(struct archive_entry *);
-__LA_DECL struct archive_entry	*tk_archive_entry_new(void);
+__LA_DECL struct tk_archive_entry	*tk_archive_entry_clone(struct tk_archive_entry *);
+__LA_DECL void			 tk_archive_entry_free(struct tk_archive_entry *);
+__LA_DECL struct tk_archive_entry	*tk_archive_entry_new(void);
+
+/*
+ * This form of archive_entry_new2() will pull character-set
+ * conversion information from the specified archive handle.  The
+ * older archive_entry_new(void) form is equivalent to calling
+ * archive_entry_new2(NULL) and will result in the use of an internal
+ * default character-set conversion.
+ */
+__LA_DECL struct tk_archive_entry	*tk_archive_entry_new2(struct archive *);
 
 /*
  * Retrieve fields from an archive_entry.
@@ -182,127 +188,124 @@ __LA_DECL struct archive_entry	*tk_archive_entry_new(void);
  * also return NULL when implicit character set conversions fail.
  * This is usually what you want.
  */
-__LA_DECL time_t	 tk_archive_entry_atime(struct archive_entry *);
-__LA_DECL long		 tk_archive_entry_atime_nsec(struct archive_entry *);
-__LA_DECL int		 tk_archive_entry_atime_is_set(struct archive_entry *);
-__LA_DECL time_t	 tk_archive_entry_birthtime(struct archive_entry *);
-__LA_DECL long		 tk_archive_entry_birthtime_nsec(struct archive_entry *);
-__LA_DECL int		 tk_archive_entry_birthtime_is_set(struct archive_entry *);
-__LA_DECL time_t	 tk_archive_entry_ctime(struct archive_entry *);
-__LA_DECL long		 tk_archive_entry_ctime_nsec(struct archive_entry *);
-__LA_DECL int		 tk_archive_entry_ctime_is_set(struct archive_entry *);
-__LA_DECL dev_t		 tk_archive_entry_dev(struct archive_entry *);
-__LA_DECL dev_t		 tk_archive_entry_devmajor(struct archive_entry *);
-__LA_DECL dev_t		 tk_archive_entry_devminor(struct archive_entry *);
-__LA_DECL __LA_MODE_T	 tk_archive_entry_filetype(struct archive_entry *);
-__LA_DECL void		 tk_archive_entry_fflags(struct archive_entry *,
+__LA_DECL time_t	 tk_archive_entry_atime(struct tk_archive_entry *);
+__LA_DECL long		 tk_archive_entry_atime_nsec(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_atime_is_set(struct tk_archive_entry *);
+__LA_DECL time_t	 tk_archive_entry_birthtime(struct tk_archive_entry *);
+__LA_DECL long		 tk_archive_entry_birthtime_nsec(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_birthtime_is_set(struct tk_archive_entry *);
+__LA_DECL time_t	 tk_archive_entry_ctime(struct tk_archive_entry *);
+__LA_DECL long		 tk_archive_entry_ctime_nsec(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_ctime_is_set(struct tk_archive_entry *);
+__LA_DECL dev_t		 tk_archive_entry_dev(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_dev_is_set(struct tk_archive_entry *);
+__LA_DECL dev_t		 tk_archive_entry_devmajor(struct tk_archive_entry *);
+__LA_DECL dev_t		 tk_archive_entry_devminor(struct tk_archive_entry *);
+__LA_DECL __LA_MODE_T	 tk_archive_entry_filetype(struct tk_archive_entry *);
+__LA_DECL void		 tk_archive_entry_fflags(struct tk_archive_entry *,
 			    unsigned long * /* set */,
 			    unsigned long * /* clear */);
-__LA_DECL const char	*tk_archive_entry_fflags_text(struct archive_entry *);
-__LA_DECL __LA_GID_T	 tk_archive_entry_gid(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_gname(struct archive_entry *);
-__LA_DECL const wchar_t	*tk_archive_entry_gname_w(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_hardlink(struct archive_entry *);
-__LA_DECL const wchar_t	*tk_archive_entry_hardlink_w(struct archive_entry *);
-__LA_DECL __LA_INO_T	 tk_archive_entry_ino(struct archive_entry *);
-__LA_DECL __LA_INT64_T	 tk_archive_entry_ino64(struct archive_entry *);
-__LA_DECL __LA_MODE_T	 tk_archive_entry_mode(struct archive_entry *);
-__LA_DECL time_t	 tk_archive_entry_mtime(struct archive_entry *);
-__LA_DECL long		 tk_archive_entry_mtime_nsec(struct archive_entry *);
-__LA_DECL int		 tk_archive_entry_mtime_is_set(struct archive_entry *);
-__LA_DECL unsigned int	 tk_archive_entry_nlink(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_pathname(struct archive_entry *);
-__LA_DECL const wchar_t	*tk_archive_entry_pathname_w(struct archive_entry *);
-__LA_DECL dev_t		 tk_archive_entry_rdev(struct archive_entry *);
-__LA_DECL dev_t		 tk_archive_entry_rdevmajor(struct archive_entry *);
-__LA_DECL dev_t		 tk_archive_entry_rdevminor(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_sourcepath(struct archive_entry *);
-__LA_DECL __LA_INT64_T	 tk_archive_entry_size(struct archive_entry *);
-__LA_DECL int		 tk_archive_entry_size_is_set(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_strmode(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_symlink(struct archive_entry *);
-__LA_DECL const wchar_t	*tk_archive_entry_symlink_w(struct archive_entry *);
-__LA_DECL __LA_UID_T	 tk_archive_entry_uid(struct archive_entry *);
-__LA_DECL const char	*tk_archive_entry_uname(struct archive_entry *);
-__LA_DECL const wchar_t	*tk_archive_entry_uname_w(struct archive_entry *);
+__LA_DECL const char	*tk_archive_entry_fflags_text(struct tk_archive_entry *);
+__LA_DECL __LA_INT64_T	 tk_archive_entry_gid(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_gname(struct tk_archive_entry *);
+__LA_DECL const wchar_t	*tk_archive_entry_gname_w(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_hardlink(struct tk_archive_entry *);
+__LA_DECL const wchar_t	*tk_archive_entry_hardlink_w(struct tk_archive_entry *);
+__LA_DECL __LA_INT64_T	 tk_archive_entry_ino(struct tk_archive_entry *);
+__LA_DECL __LA_INT64_T	 tk_archive_entry_ino64(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_ino_is_set(struct tk_archive_entry *);
+__LA_DECL __LA_MODE_T	 tk_archive_entry_mode(struct tk_archive_entry *);
+__LA_DECL time_t	 tk_archive_entry_mtime(struct tk_archive_entry *);
+__LA_DECL long		 tk_archive_entry_mtime_nsec(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_mtime_is_set(struct tk_archive_entry *);
+__LA_DECL unsigned int	 tk_archive_entry_nlink(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_pathname(struct tk_archive_entry *);
+__LA_DECL const wchar_t	*tk_archive_entry_pathname_w(struct tk_archive_entry *);
+__LA_DECL __LA_MODE_T	 tk_archive_entry_perm(struct tk_archive_entry *);
+__LA_DECL dev_t		 tk_archive_entry_rdev(struct tk_archive_entry *);
+__LA_DECL dev_t		 tk_archive_entry_rdevmajor(struct tk_archive_entry *);
+__LA_DECL dev_t		 tk_archive_entry_rdevminor(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_sourcepath(struct tk_archive_entry *);
+__LA_DECL const wchar_t	*tk_archive_entry_sourcepath_w(struct tk_archive_entry *);
+__LA_DECL __LA_INT64_T	 tk_archive_entry_size(struct tk_archive_entry *);
+__LA_DECL int		 tk_archive_entry_size_is_set(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_strmode(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_symlink(struct tk_archive_entry *);
+__LA_DECL const wchar_t	*tk_archive_entry_symlink_w(struct tk_archive_entry *);
+__LA_DECL __LA_INT64_T	 tk_archive_entry_uid(struct tk_archive_entry *);
+__LA_DECL const char	*tk_archive_entry_uname(struct tk_archive_entry *);
+__LA_DECL const wchar_t	*tk_archive_entry_uname_w(struct tk_archive_entry *);
 
 /*
  * Set fields in an archive_entry.
  *
- * Note that string 'set' functions do not copy the string, only the pointer.
- * In contrast, 'copy' functions do copy the object pointed to.
- *
- * Note: As of libarchive 2.4, 'set' functions do copy the string and
- * are therefore exact synonyms for the 'copy' versions.  The 'copy'
- * names will be retired in libarchive 3.0.
+ * Note: Before libarchive 2.4, there were 'set' and 'copy' versions
+ * of the string setters.  'copy' copied the actual string, 'set' just
+ * stored the pointer.  In libarchive 2.4 and later, strings are
+ * always copied.
  */
 
-__LA_DECL void	tk_archive_entry_set_atime(struct archive_entry *, time_t, long);
-__LA_DECL void  tk_archive_entry_unset_atime(struct archive_entry *);
+__LA_DECL void	tk_archive_entry_set_atime(struct tk_archive_entry *, time_t, long);
+__LA_DECL void  tk_archive_entry_unset_atime(struct tk_archive_entry *);
 #if defined(_WIN32) && !defined(__CYGWIN__)
-__LA_DECL void tk_archive_entry_copy_bhfi(struct archive_entry *,
-									   BY_HANDLE_FILE_INFORMATION *);
+__LA_DECL void tk_archive_entry_copy_bhfi(struct tk_archive_entry *, BY_HANDLE_FILE_INFORMATION *);
 #endif
-__LA_DECL void	tk_archive_entry_set_birthtime(struct archive_entry *, time_t, long);
-__LA_DECL void  tk_archive_entry_unset_birthtime(struct archive_entry *);
-__LA_DECL void	tk_archive_entry_set_ctime(struct archive_entry *, time_t, long);
-__LA_DECL void  tk_archive_entry_unset_ctime(struct archive_entry *);
-__LA_DECL void	tk_archive_entry_set_dev(struct archive_entry *, dev_t);
-__LA_DECL void	tk_archive_entry_set_devmajor(struct archive_entry *, dev_t);
-__LA_DECL void	tk_archive_entry_set_devminor(struct archive_entry *, dev_t);
-__LA_DECL void	tk_archive_entry_set_filetype(struct archive_entry *, unsigned int);
-__LA_DECL void	tk_archive_entry_set_fflags(struct archive_entry *,
+__LA_DECL void	tk_archive_entry_set_birthtime(struct tk_archive_entry *, time_t, long);
+__LA_DECL void  tk_archive_entry_unset_birthtime(struct tk_archive_entry *);
+__LA_DECL void	tk_archive_entry_set_ctime(struct tk_archive_entry *, time_t, long);
+__LA_DECL void  tk_archive_entry_unset_ctime(struct tk_archive_entry *);
+__LA_DECL void	tk_archive_entry_set_dev(struct tk_archive_entry *, dev_t);
+__LA_DECL void	tk_archive_entry_set_devmajor(struct tk_archive_entry *, dev_t);
+__LA_DECL void	tk_archive_entry_set_devminor(struct tk_archive_entry *, dev_t);
+__LA_DECL void	tk_archive_entry_set_filetype(struct tk_archive_entry *, unsigned int);
+__LA_DECL void	tk_archive_entry_set_fflags(struct tk_archive_entry *,
 	    unsigned long /* set */, unsigned long /* clear */);
 /* Returns pointer to start of first invalid token, or NULL if none. */
 /* Note that all recognized tokens are processed, regardless. */
-__LA_DECL const char *tk_archive_entry_copy_fflags_text(struct archive_entry *,
+__LA_DECL const char *tk_archive_entry_copy_fflags_text(struct tk_archive_entry *,
 	    const char *);
-__LA_DECL const wchar_t *tk_archive_entry_copy_fflags_text_w(struct archive_entry *,
+__LA_DECL const wchar_t *tk_archive_entry_copy_fflags_text_w(struct tk_archive_entry *,
 	    const wchar_t *);
-__LA_DECL void	tk_archive_entry_set_gid(struct archive_entry *, __LA_GID_T);
-__LA_DECL void	tk_archive_entry_set_gname(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_gname(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_gname_w(struct archive_entry *, const wchar_t *);
-__LA_DECL int	tk_archive_entry_update_gname_utf8(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_set_hardlink(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_hardlink(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_hardlink_w(struct archive_entry *, const wchar_t *);
-__LA_DECL int	tk_archive_entry_update_hardlink_utf8(struct archive_entry *, const char *);
-#if ARCHIVE_VERSION_NUMBER >= 3000000
-/* Starting with libarchive 3.0, this will be synonym for ino64. */
-__LA_DECL void	tk_archive_entry_set_ino(struct archive_entry *, __LA_INT64_T);
-#else
-__LA_DECL void	tk_archive_entry_set_ino(struct archive_entry *, unsigned long);
-#endif
-__LA_DECL void	tk_archive_entry_set_ino64(struct archive_entry *, __LA_INT64_T);
-__LA_DECL void	tk_archive_entry_set_link(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_link(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_link_w(struct archive_entry *, const wchar_t *);
-__LA_DECL int	tk_archive_entry_update_link_utf8(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_set_mode(struct archive_entry *, __LA_MODE_T);
-__LA_DECL void	tk_archive_entry_set_mtime(struct archive_entry *, time_t, long);
-__LA_DECL void  tk_archive_entry_unset_mtime(struct archive_entry *);
-__LA_DECL void	tk_archive_entry_set_nlink(struct archive_entry *, unsigned int);
-__LA_DECL void	tk_archive_entry_set_pathname(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_pathname(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_pathname_w(struct archive_entry *, const wchar_t *);
-__LA_DECL int	tk_archive_entry_update_pathname_utf8(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_set_perm(struct archive_entry *, __LA_MODE_T);
-__LA_DECL void	tk_archive_entry_set_rdev(struct archive_entry *, dev_t);
-__LA_DECL void	tk_archive_entry_set_rdevmajor(struct archive_entry *, dev_t);
-__LA_DECL void	tk_archive_entry_set_rdevminor(struct archive_entry *, dev_t);
-__LA_DECL void	tk_archive_entry_set_size(struct archive_entry *, __LA_INT64_T);
-__LA_DECL void	tk_archive_entry_unset_size(struct archive_entry *);
-__LA_DECL void	tk_archive_entry_copy_sourcepath(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_set_symlink(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_symlink(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_symlink_w(struct archive_entry *, const wchar_t *);
-__LA_DECL int	tk_archive_entry_update_symlink_utf8(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_set_uid(struct archive_entry *, __LA_UID_T);
-__LA_DECL void	tk_archive_entry_set_uname(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_uname(struct archive_entry *, const char *);
-__LA_DECL void	tk_archive_entry_copy_uname_w(struct archive_entry *, const wchar_t *);
-__LA_DECL int	tk_archive_entry_update_uname_utf8(struct archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_set_gid(struct tk_archive_entry *, __LA_INT64_T);
+__LA_DECL void	tk_archive_entry_set_gname(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_gname(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_gname_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL int	tk_archive_entry_update_gname_utf8(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_set_hardlink(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_hardlink(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_hardlink_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL int	tk_archive_entry_update_hardlink_utf8(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_set_ino(struct tk_archive_entry *, __LA_INT64_T);
+__LA_DECL void	tk_archive_entry_set_ino64(struct tk_archive_entry *, __LA_INT64_T);
+__LA_DECL void	tk_archive_entry_set_link(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_link(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_link_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL int	tk_archive_entry_update_link_utf8(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_set_mode(struct tk_archive_entry *, __LA_MODE_T);
+__LA_DECL void	tk_archive_entry_set_mtime(struct tk_archive_entry *, time_t, long);
+__LA_DECL void  tk_archive_entry_unset_mtime(struct tk_archive_entry *);
+__LA_DECL void	tk_archive_entry_set_nlink(struct tk_archive_entry *, unsigned int);
+__LA_DECL void	tk_archive_entry_set_pathname(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_pathname(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_pathname_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL int	tk_archive_entry_update_pathname_utf8(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_set_perm(struct tk_archive_entry *, __LA_MODE_T);
+__LA_DECL void	tk_archive_entry_set_rdev(struct tk_archive_entry *, dev_t);
+__LA_DECL void	tk_archive_entry_set_rdevmajor(struct tk_archive_entry *, dev_t);
+__LA_DECL void	tk_archive_entry_set_rdevminor(struct tk_archive_entry *, dev_t);
+__LA_DECL void	tk_archive_entry_set_size(struct tk_archive_entry *, __LA_INT64_T);
+__LA_DECL void	tk_archive_entry_unset_size(struct tk_archive_entry *);
+__LA_DECL void	tk_archive_entry_copy_sourcepath(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_sourcepath_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL void	tk_archive_entry_set_symlink(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_symlink(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_symlink_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL int	tk_archive_entry_update_symlink_utf8(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_set_uid(struct tk_archive_entry *, __LA_INT64_T);
+__LA_DECL void	tk_archive_entry_set_uname(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_uname(struct tk_archive_entry *, const char *);
+__LA_DECL void	tk_archive_entry_copy_uname_w(struct tk_archive_entry *, const wchar_t *);
+__LA_DECL int	tk_archive_entry_update_uname_utf8(struct tk_archive_entry *, const char *);
 /*
  * Routines to bulk copy fields to/from a platform-native "struct
  * stat."  Libarchive used to just store a struct stat inside of each
@@ -310,11 +313,23 @@ __LA_DECL int	tk_archive_entry_update_uname_utf8(struct archive_entry *, const c
  * manipulate archives on systems different than the ones they were
  * created on.
  *
- * TODO: On Linux, provide both stat32 and stat64 versions of these functions.
+ * TODO: On Linux and other LFS systems, provide both stat32 and
+ * stat64 versions of these functions and all of the macro glue so
+ * that archive_entry_stat is magically defined to
+ * archive_entry_stat32 or archive_entry_stat64 as appropriate.
  */
-__LA_DECL const struct stat	*tk_archive_entry_stat(struct archive_entry *);
-__LA_DECL void	tk_archive_entry_copy_stat(struct archive_entry *, const struct stat *);
+__LA_DECL const struct stat	*tk_archive_entry_stat(struct tk_archive_entry *);
+__LA_DECL void	tk_archive_entry_copy_stat(struct tk_archive_entry *, const struct stat *);
 
+/*
+ * Storage for Mac OS-specific AppleDouble metadata information.
+ * Apple-format tar files store a separate binary blob containing
+ * encoded metadata with ACL, extended attributes, etc.
+ * This provides a place to store that blob.
+ */
+
+__LA_DECL const void * tk_archive_entry_mac_metadata(struct tk_archive_entry *, size_t *);
+__LA_DECL void tk_archive_entry_copy_mac_metadata(struct tk_archive_entry *, const void *, size_t);
 
 /*
  * ACL routines.  This used to simply store and return text-format ACL
@@ -326,32 +341,95 @@ __LA_DECL void	tk_archive_entry_copy_stat(struct archive_entry *, const struct s
  *
  *  This last point, in particular, forces me to implement a reasonably
  *  complete set of ACL support routines.
- *
- *  TODO: Extend this to support NFSv4/NTFS permissions.  That should
- *  allow full ACL support on Mac OS, in particular, which uses
- *  POSIX.1e-style interfaces to manipulate NFSv4/NTFS permissions.
  */
 
 /*
- * Permission bits mimic POSIX.1e.  Note that I've not followed POSIX.1e's
- * "permset"/"perm" abstract type nonsense.  A permset is just a simple
- * bitmap, following long-standing Unix tradition.
+ * Permission bits.
  */
-#define	ARCHIVE_ENTRY_ACL_EXECUTE	1
-#define	ARCHIVE_ENTRY_ACL_WRITE		2
-#define	ARCHIVE_ENTRY_ACL_READ		4
+#define	ARCHIVE_ENTRY_ACL_EXECUTE             0x00000001
+#define	ARCHIVE_ENTRY_ACL_WRITE               0x00000002
+#define	ARCHIVE_ENTRY_ACL_READ                0x00000004
+#define	ARCHIVE_ENTRY_ACL_READ_DATA           0x00000008
+#define	ARCHIVE_ENTRY_ACL_LIST_DIRECTORY      0x00000008
+#define	ARCHIVE_ENTRY_ACL_WRITE_DATA          0x00000010
+#define	ARCHIVE_ENTRY_ACL_ADD_FILE            0x00000010
+#define	ARCHIVE_ENTRY_ACL_APPEND_DATA         0x00000020
+#define	ARCHIVE_ENTRY_ACL_ADD_SUBDIRECTORY    0x00000020
+#define	ARCHIVE_ENTRY_ACL_READ_NAMED_ATTRS    0x00000040
+#define	ARCHIVE_ENTRY_ACL_WRITE_NAMED_ATTRS   0x00000080
+#define	ARCHIVE_ENTRY_ACL_DELETE_CHILD        0x00000100
+#define	ARCHIVE_ENTRY_ACL_READ_ATTRIBUTES     0x00000200
+#define	ARCHIVE_ENTRY_ACL_WRITE_ATTRIBUTES    0x00000400
+#define	ARCHIVE_ENTRY_ACL_DELETE              0x00000800
+#define	ARCHIVE_ENTRY_ACL_READ_ACL            0x00001000
+#define	ARCHIVE_ENTRY_ACL_WRITE_ACL           0x00002000
+#define	ARCHIVE_ENTRY_ACL_WRITE_OWNER         0x00004000
+#define	ARCHIVE_ENTRY_ACL_SYNCHRONIZE         0x00008000
 
-/* We need to be able to specify either or both of these. */
-#define	ARCHIVE_ENTRY_ACL_TYPE_ACCESS	256
-#define	ARCHIVE_ENTRY_ACL_TYPE_DEFAULT	512
+#define	ARCHIVE_ENTRY_ACL_PERMS_POSIX1E			\
+	(ARCHIVE_ENTRY_ACL_EXECUTE			\
+	    | ARCHIVE_ENTRY_ACL_WRITE			\
+	    | ARCHIVE_ENTRY_ACL_READ)
+
+#define ARCHIVE_ENTRY_ACL_PERMS_NFS4			\
+	(ARCHIVE_ENTRY_ACL_EXECUTE			\
+	    | ARCHIVE_ENTRY_ACL_READ_DATA		\
+	    | ARCHIVE_ENTRY_ACL_LIST_DIRECTORY 		\
+	    | ARCHIVE_ENTRY_ACL_WRITE_DATA		\
+	    | ARCHIVE_ENTRY_ACL_ADD_FILE		\
+	    | ARCHIVE_ENTRY_ACL_APPEND_DATA		\
+	    | ARCHIVE_ENTRY_ACL_ADD_SUBDIRECTORY	\
+	    | ARCHIVE_ENTRY_ACL_READ_NAMED_ATTRS	\
+	    | ARCHIVE_ENTRY_ACL_WRITE_NAMED_ATTRS	\
+	    | ARCHIVE_ENTRY_ACL_DELETE_CHILD		\
+	    | ARCHIVE_ENTRY_ACL_READ_ATTRIBUTES		\
+	    | ARCHIVE_ENTRY_ACL_WRITE_ATTRIBUTES	\
+	    | ARCHIVE_ENTRY_ACL_DELETE			\
+	    | ARCHIVE_ENTRY_ACL_READ_ACL		\
+	    | ARCHIVE_ENTRY_ACL_WRITE_ACL		\
+	    | ARCHIVE_ENTRY_ACL_WRITE_OWNER		\
+	    | ARCHIVE_ENTRY_ACL_SYNCHRONIZE)
+
+/*
+ * Inheritance values (NFS4 ACLs only); included in permset.
+ */
+#define	ARCHIVE_ENTRY_ACL_ENTRY_FILE_INHERIT                0x02000000
+#define	ARCHIVE_ENTRY_ACL_ENTRY_DIRECTORY_INHERIT           0x04000000
+#define	ARCHIVE_ENTRY_ACL_ENTRY_NO_PROPAGATE_INHERIT        0x08000000
+#define	ARCHIVE_ENTRY_ACL_ENTRY_INHERIT_ONLY                0x10000000
+#define	ARCHIVE_ENTRY_ACL_ENTRY_SUCCESSFUL_ACCESS           0x20000000
+#define	ARCHIVE_ENTRY_ACL_ENTRY_FAILED_ACCESS               0x40000000
+
+#define	ARCHIVE_ENTRY_ACL_INHERITANCE_NFS4			\
+	(ARCHIVE_ENTRY_ACL_ENTRY_FILE_INHERIT			\
+	    | ARCHIVE_ENTRY_ACL_ENTRY_DIRECTORY_INHERIT		\
+	    | ARCHIVE_ENTRY_ACL_ENTRY_NO_PROPAGATE_INHERIT	\
+	    | ARCHIVE_ENTRY_ACL_ENTRY_INHERIT_ONLY		\
+	    | ARCHIVE_ENTRY_ACL_ENTRY_SUCCESSFUL_ACCESS		\
+	    | ARCHIVE_ENTRY_ACL_ENTRY_FAILED_ACCESS)
+
+/* We need to be able to specify combinations of these. */
+#define	ARCHIVE_ENTRY_ACL_TYPE_ACCESS	256  /* POSIX.1e only */
+#define	ARCHIVE_ENTRY_ACL_TYPE_DEFAULT	512  /* POSIX.1e only */
+#define	ARCHIVE_ENTRY_ACL_TYPE_ALLOW	1024 /* NFS4 only */
+#define	ARCHIVE_ENTRY_ACL_TYPE_DENY	2048 /* NFS4 only */
+#define	ARCHIVE_ENTRY_ACL_TYPE_AUDIT	4096 /* NFS4 only */
+#define	ARCHIVE_ENTRY_ACL_TYPE_ALARM	8192 /* NFS4 only */
+#define	ARCHIVE_ENTRY_ACL_TYPE_POSIX1E	(ARCHIVE_ENTRY_ACL_TYPE_ACCESS \
+	    | ARCHIVE_ENTRY_ACL_TYPE_DEFAULT)
+#define	ARCHIVE_ENTRY_ACL_TYPE_NFS4	(ARCHIVE_ENTRY_ACL_TYPE_ALLOW \
+	    | ARCHIVE_ENTRY_ACL_TYPE_DENY \
+	    | ARCHIVE_ENTRY_ACL_TYPE_AUDIT \
+	    | ARCHIVE_ENTRY_ACL_TYPE_ALARM)
 
 /* Tag values mimic POSIX.1e */
 #define	ARCHIVE_ENTRY_ACL_USER		10001	/* Specified user. */
 #define	ARCHIVE_ENTRY_ACL_USER_OBJ 	10002	/* User who owns the file. */
 #define	ARCHIVE_ENTRY_ACL_GROUP		10003	/* Specified group. */
 #define	ARCHIVE_ENTRY_ACL_GROUP_OBJ	10004	/* Group who owns the file. */
-#define	ARCHIVE_ENTRY_ACL_MASK		10005	/* Modify group access. */
-#define	ARCHIVE_ENTRY_ACL_OTHER		10006	/* Public. */
+#define	ARCHIVE_ENTRY_ACL_MASK		10005	/* Modify group access (POSIX.1e only) */
+#define	ARCHIVE_ENTRY_ACL_OTHER		10006	/* Public (POSIX.1e only) */
+#define	ARCHIVE_ENTRY_ACL_EVERYONE	10107   /* Everyone (NFS4 only) */
 
 /*
  * Set the ACL by clearing it and adding entries one at a time.
@@ -362,24 +440,24 @@ __LA_DECL void	tk_archive_entry_copy_stat(struct archive_entry *, const struct s
  * POSIX.1e) is useful for handling archive formats that combine
  * default and access information in a single ACL list.
  */
-__LA_DECL void	 tk_archive_entry_acl_clear(struct archive_entry *);
-__LA_DECL void	 tk_archive_entry_acl_add_entry(struct archive_entry *,
+__LA_DECL void	 tk_archive_entry_acl_clear(struct tk_archive_entry *);
+__LA_DECL int	 tk_archive_entry_acl_add_entry(struct tk_archive_entry *,
 	    int /* type */, int /* permset */, int /* tag */,
 	    int /* qual */, const char * /* name */);
-__LA_DECL void	 tk_archive_entry_acl_add_entry_w(struct archive_entry *,
+__LA_DECL int	 tk_archive_entry_acl_add_entry_w(struct tk_archive_entry *,
 	    int /* type */, int /* permset */, int /* tag */,
 	    int /* qual */, const wchar_t * /* name */);
 
 /*
  * To retrieve the ACL, first "reset", then repeatedly ask for the
  * "next" entry.  The want_type parameter allows you to request only
- * access entries or only default entries.
+ * certain types of entries.
  */
-__LA_DECL int	 tk_archive_entry_acl_reset(struct archive_entry *, int /* want_type */);
-__LA_DECL int	 tk_archive_entry_acl_next(struct archive_entry *, int /* want_type */,
+__LA_DECL int	 tk_archive_entry_acl_reset(struct tk_archive_entry *, int /* want_type */);
+__LA_DECL int	 tk_archive_entry_acl_next(struct tk_archive_entry *, int /* want_type */,
 	    int * /* type */, int * /* permset */, int * /* tag */,
 	    int * /* qual */, const char ** /* name */);
-__LA_DECL int	 tk_archive_entry_acl_next_w(struct archive_entry *, int /* want_type */,
+__LA_DECL int	 tk_archive_entry_acl_next_w(struct tk_archive_entry *, int /* want_type */,
 	    int * /* type */, int * /* permset */, int * /* tag */,
 	    int * /* qual */, const wchar_t ** /* name */);
 
@@ -387,43 +465,36 @@ __LA_DECL int	 tk_archive_entry_acl_next_w(struct archive_entry *, int /* want_t
  * Construct a text-format ACL.  The flags argument is a bitmask that
  * can include any of the following:
  *
- * ARCHIVE_ENTRY_ACL_TYPE_ACCESS - Include access entries.
- * ARCHIVE_ENTRY_ACL_TYPE_DEFAULT - Include default entries.
+ * ARCHIVE_ENTRY_ACL_TYPE_ACCESS - Include POSIX.1e "access" entries.
+ * ARCHIVE_ENTRY_ACL_TYPE_DEFAULT - Include POSIX.1e "default" entries.
+ * ARCHIVE_ENTRY_ACL_TYPE_NFS4 - Include NFS4 entries.
  * ARCHIVE_ENTRY_ACL_STYLE_EXTRA_ID - Include extra numeric ID field in
- *    each ACL entry.  (As used by 'star'.)
+ *    each ACL entry.  ('star' introduced this for POSIX.1e, this flag
+ *    also applies to NFS4.)
  * ARCHIVE_ENTRY_ACL_STYLE_MARK_DEFAULT - Include "default:" before each
- *    default ACL entry.
+ *    default ACL entry, as used in old Solaris ACLs.
  */
 #define	ARCHIVE_ENTRY_ACL_STYLE_EXTRA_ID	1024
 #define	ARCHIVE_ENTRY_ACL_STYLE_MARK_DEFAULT	2048
-__LA_DECL const wchar_t	*tk_archive_entry_acl_text_w(struct archive_entry *,
+__LA_DECL const wchar_t	*tk_archive_entry_acl_text_w(struct tk_archive_entry *,
+		    int /* flags */);
+__LA_DECL const char *tk_archive_entry_acl_text(struct tk_archive_entry *,
 		    int /* flags */);
 
 /* Return a count of entries matching 'want_type' */
-__LA_DECL int	 tk_archive_entry_acl_count(struct archive_entry *, int /* want_type */);
+__LA_DECL int	 tk_archive_entry_acl_count(struct tk_archive_entry *, int /* want_type */);
 
-/*
- * Private ACL parser.  This is private because it handles some
- * very weird formats that clients should not be messing with.
- * Clients should only deal with their platform-native formats.
- * Because of the need to support many formats cleanly, new arguments
- * are likely to get added on a regular basis.  Clients who try to use
- * this interface are likely to be surprised when it changes.
- *
- * You were warned!
- *
- * TODO: Move this declaration out of the public header and into
- * a private header.  Warnings above are silly.
- */
-__LA_DECL int		 __archive_entry_acl_parse_w(struct archive_entry *,
-		    const wchar_t *, int /* type */);
+/* Return an opaque ACL object. */
+/* There's not yet anything clients can actually do with this... */
+struct tk_archive_acl;
+__LA_DECL struct tk_archive_acl *tk_archive_entry_acl(struct tk_archive_entry *);
 
 /*
  * extended attributes
  */
 
-__LA_DECL void	 tk_archive_entry_xattr_clear(struct archive_entry *);
-__LA_DECL void	 tk_archive_entry_xattr_add_entry(struct archive_entry *,
+__LA_DECL void	 tk_archive_entry_xattr_clear(struct tk_archive_entry *);
+__LA_DECL void	 tk_archive_entry_xattr_add_entry(struct tk_archive_entry *,
 	    const char * /* name */, const void * /* value */,
 	    size_t /* size */);
 
@@ -432,24 +503,42 @@ __LA_DECL void	 tk_archive_entry_xattr_add_entry(struct archive_entry *,
  * "next" entry.
  */
 
-__LA_DECL int	tk_archive_entry_xattr_count(struct archive_entry *);
-__LA_DECL int	tk_archive_entry_xattr_reset(struct archive_entry *);
-__LA_DECL int	tk_archive_entry_xattr_next(struct archive_entry *,
+__LA_DECL int	tk_archive_entry_xattr_count(struct tk_archive_entry *);
+__LA_DECL int	tk_archive_entry_xattr_reset(struct tk_archive_entry *);
+__LA_DECL int	tk_archive_entry_xattr_next(struct tk_archive_entry *,
 	    const char ** /* name */, const void ** /* value */, size_t *);
+
+/*
+ * sparse
+ */
+
+__LA_DECL void	 tk_archive_entry_sparse_clear(struct tk_archive_entry *);
+__LA_DECL void	 tk_archive_entry_sparse_add_entry(struct tk_archive_entry *,
+	    __LA_INT64_T /* offset */, __LA_INT64_T /* length */);
+
+/*
+ * To retrieve the xattr list, first "reset", then repeatedly ask for the
+ * "next" entry.
+ */
+
+__LA_DECL int	tk_archive_entry_sparse_count(struct tk_archive_entry *);
+__LA_DECL int	tk_archive_entry_sparse_reset(struct tk_archive_entry *);
+__LA_DECL int	tk_archive_entry_sparse_next(struct tk_archive_entry *,
+	    __LA_INT64_T * /* offset */, __LA_INT64_T * /* length */);
 
 /*
  * Utility to match up hardlinks.
  *
  * The 'struct archive_entry_linkresolver' is a cache of archive entries
  * for files with multiple links.  Here's how to use it:
- *   1. Create a lookup object with tk_archive_entry_linkresolver_new()
+ *   1. Create a lookup object with archive_entry_linkresolver_new()
  *   2. Tell it the archive format you're using.
- *   3. Hand each tk_archive_entry to tk_archive_entry_linkify().
+ *   3. Hand each archive_entry to archive_entry_linkify().
  *      That function will return 0, 1, or 2 entries that should
  *      be written.
- *   4. Call tk_archive_entry_linkify(resolver, NULL) until
+ *   4. Call archive_entry_linkify(resolver, NULL) until
  *      no more entries are returned.
- *   5. Call tk_archive_entry_link_resolver_free(resolver) to free resources.
+ *   5. Call archive_entry_linkresolver_free(resolver) to free resources.
  *
  * The entries returned have their hardlink and size fields updated
  * appropriately.  If an entry is passed in that does not refer to
@@ -462,10 +551,10 @@ __LA_DECL int	tk_archive_entry_xattr_next(struct archive_entry *,
  * have been found.  If the nlinks value is zero, it will keep every
  * name in the cache indefinitely, which can use a lot of memory.
  *
- * Note that tk_archive_entry_size() is reset to zero if the file
+ * Note that archive_entry_size() is reset to zero if the file
  * body should not be written to the archive.  Pay attention!
  */
-struct archive_entry_linkresolver;
+struct tk_archive_entry_linkresolver;
 
 /*
  * There are three different strategies for marking hardlinks.
@@ -488,7 +577,7 @@ struct archive_entry_linkresolver;
  *    there's no easy way to know when we've seen the last occurrence.
  *    The solution here is to queue one link until we see the next.
  *    At the end of the session, you can enumerate any remaining
- *    entries by calling tk_archive_entry_linkify(NULL) and store those
+ *    entries by calling archive_entry_linkify(NULL) and store those
  *    bodies.  If you have a file with three links l1, l2, and l3,
  *    you'll get the following behavior if you see all three links:
  *           linkify(l1) => NULL   (the resolver stores l1 internally)
@@ -499,7 +588,7 @@ struct archive_entry_linkresolver;
  *           linkify(l2) => l1
  *           linkify(NULL) => l2   (at end, you retrieve remaining links)
  *    As the name suggests, this strategy is used by newer cpio variants.
- *    It's noticably more complex for the archiver, slightly more complex
+ *    It's noticeably more complex for the archiver, slightly more complex
  *    for the dearchiver than the tar strategy, but makes it straightforward
  *    to restore a file using any link by simply continuing to scan until
  *    you see a link that is stored with a body.  In contrast, the tar
@@ -507,12 +596,14 @@ struct archive_entry_linkresolver;
  *    correctly extract an arbitrary link.
  */
 
-__LA_DECL struct archive_entry_linkresolver *tk_archive_entry_linkresolver_new(void);
+__LA_DECL struct tk_archive_entry_linkresolver *tk_archive_entry_linkresolver_new(void);
 __LA_DECL void tk_archive_entry_linkresolver_set_strategy(
-	struct archive_entry_linkresolver *, int /* format_code */);
-__LA_DECL void tk_archive_entry_linkresolver_free(struct archive_entry_linkresolver *);
-__LA_DECL void tk_archive_entry_linkify(struct archive_entry_linkresolver *,
-    struct archive_entry **, struct archive_entry **);
+	struct tk_archive_entry_linkresolver *, int /* format_code */);
+__LA_DECL void tk_archive_entry_linkresolver_free(struct tk_archive_entry_linkresolver *);
+__LA_DECL void tk_archive_entry_linkify(struct tk_archive_entry_linkresolver *,
+    struct tk_archive_entry **, struct tk_archive_entry **);
+__LA_DECL struct tk_archive_entry *tk_archive_entry_partial_links(
+    struct tk_archive_entry_linkresolver *res, unsigned int *links);
 
 #ifdef __cplusplus
 }

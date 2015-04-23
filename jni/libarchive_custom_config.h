@@ -193,7 +193,7 @@
 /* #undef HAVE_IO_H */
 
 /* Define to 1 if you have the <langinfo.h> header file. */
-#define HAVE_LANGINFO_H 1
+//#define HAVE_LANGINFO_H 1
 
 /* Define to 1 if you have the `lchflags' function. */
 #define HAVE_LCHFLAGS 1
@@ -302,7 +302,7 @@
 /* #undef HAVE_NDIR_H */
 
 /* Define to 1 if you have the `nl_langinfo' function. */
-#define HAVE_NL_LANGINFO 1
+//#define HAVE_NL_LANGINFO 1
 
 /* Define to 1 if you have the <openssl/md5.h> header file. */
 /* #define HAVE_OPENSSL_MD5_H 1 */
@@ -595,6 +595,8 @@
 /* Define to 1 if you have the <zlib.h> header file. */
 #define HAVE_ZLIB_H 1
 
+#define HAVE_SYS_UTSNAME_H 1
+
 /* Version number of libarchive as a single integer */
 #define LIBARCHIVE_VERSION_NUMBER "2008003"
 
@@ -746,3 +748,4 @@
 
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 /* #undef uintptr_t */
+

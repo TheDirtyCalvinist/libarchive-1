@@ -41,18 +41,22 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_write_set_format.c 201168 2009-1
 static
 struct { int code; int (*setter)(struct archive *); } codes[] =
 {
+	{ ARCHIVE_FORMAT_7ZIP,		tk_archive_write_set_format_7zip },
 	{ ARCHIVE_FORMAT_CPIO,		tk_archive_write_set_format_cpio },
-	{ ARCHIVE_FORMAT_CPIO_SVR4_NOCRC,	tk_archive_write_set_format_cpio_newc },
 	{ ARCHIVE_FORMAT_CPIO_POSIX,	tk_archive_write_set_format_cpio },
+	{ ARCHIVE_FORMAT_CPIO_SVR4_NOCRC,	tk_archive_write_set_format_cpio_newc },
+	{ ARCHIVE_FORMAT_ISO9660,	tk_archive_write_set_format_iso9660 },
 	{ ARCHIVE_FORMAT_MTREE,		tk_archive_write_set_format_mtree },
 	{ ARCHIVE_FORMAT_SHAR,		tk_archive_write_set_format_shar },
 	{ ARCHIVE_FORMAT_SHAR_BASE,	tk_archive_write_set_format_shar },
 	{ ARCHIVE_FORMAT_SHAR_DUMP,	tk_archive_write_set_format_shar_dump },
 	{ ARCHIVE_FORMAT_TAR,	tk_archive_write_set_format_pax_restricted },
+	{ ARCHIVE_FORMAT_TAR_GNUTAR,	tk_archive_write_set_format_gnutar },
 	{ ARCHIVE_FORMAT_TAR_PAX_INTERCHANGE, tk_archive_write_set_format_pax },
 	{ ARCHIVE_FORMAT_TAR_PAX_RESTRICTED,
 				tk_archive_write_set_format_pax_restricted },
 	{ ARCHIVE_FORMAT_TAR_USTAR,	tk_archive_write_set_format_ustar },
+	{ ARCHIVE_FORMAT_XAR,		tk_archive_write_set_format_xar },
 	{ ARCHIVE_FORMAT_ZIP,	tk_archive_write_set_format_zip },
 	{ 0,		NULL }
 };

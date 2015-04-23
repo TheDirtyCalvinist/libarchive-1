@@ -1,5 +1,6 @@
 /*-
  * Copyright (c) 2003-2007 Tim Kientzle
+ * Copyright (c) 2011-2012 Michihiro NAKAJIMA
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -40,12 +41,17 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_write_set_format_ustar.c 191579 
 
 #include "archive.h"
 #include "archive_entry.h"
+#include "archive_entry_locale.h"
 #include "archive_private.h"
 #include "archive_write_private.h"
 
 struct ustar {
 	uint64_t	entry_bytes_remaining;
 	uint64_t	entry_padding;
+
+	struct tk_archive_string_conv *opt_sconv;
+	struct tk_archive_string_conv *sconv_default;
+	int	init_default_conversion;
 };
 
 /*
@@ -141,17 +147,18 @@ static const char template_header[] = {
 	0,0,0,0,0,0,0,0, 0,0,0,0
 };
 
-static ssize_t	tk_archive_write_ustar_data(struct archive_write *a, const void *buff,
+static ssize_t	tk_archive_write_ustar_data(struct tk_archive_write *a, const void *buff,
 		    size_t s);
-static int	tk_archive_write_ustar_destroy(struct archive_write *);
-static int	tk_archive_write_ustar_finish(struct archive_write *);
-static int	tk_archive_write_ustar_finish_entry(struct archive_write *);
-static int	tk_archive_write_ustar_header(struct archive_write *,
-		    struct archive_entry *entry);
+static int	tk_archive_write_ustar_free(struct tk_archive_write *);
+static int	tk_archive_write_ustar_close(struct tk_archive_write *);
+static int	tk_archive_write_ustar_finish_entry(struct tk_archive_write *);
+static int	tk_archive_write_ustar_header(struct tk_archive_write *,
+		    struct tk_archive_entry *entry);
+static int	tk_archive_write_ustar_options(struct tk_archive_write *,
+		    const char *, const char *);
 static int	format_256(int64_t, char *, int);
 static int	format_number(int64_t, char *, int size, int max, int strict);
 static int	format_octal(int64_t, char *, int);
-static int	write_nulls(struct archive_write *a, size_t);
 
 /*
  * Set output format to 'ustar' format.
@@ -159,47 +166,101 @@ static int	write_nulls(struct archive_write *a, size_t);
 int
 tk_archive_write_set_format_ustar(struct archive *_a)
 {
-	struct archive_write *a = (struct archive_write *)_a;
+	struct tk_archive_write *a = (struct tk_archive_write *)_a;
 	struct ustar *ustar;
 
+	tk_archive_check_magic(_a, ARCHIVE_WRITE_MAGIC,
+	    ARCHIVE_STATE_NEW, "tk_archive_write_set_format_ustar");
+
 	/* If someone else was already registered, unregister them. */
-	if (a->format_destroy != NULL)
-		(a->format_destroy)(a);
+	if (a->format_free != NULL)
+		(a->format_free)(a);
 
 	/* Basic internal sanity test. */
 	if (sizeof(template_header) != 512) {
-		tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_MISC, "Internal: template_header wrong size: %d should be 512", sizeof(template_header));
+		tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_MISC,
+		    "Internal: template_header wrong size: %zu should be 512",
+		    sizeof(template_header));
 		return (ARCHIVE_FATAL);
 	}
 
 	ustar = (struct ustar *)malloc(sizeof(*ustar));
 	if (ustar == NULL) {
-		tk_archive_set_error(&a->archive, ENOMEM, "Can't allocate ustar data");
+		tk_archive_set_error(&a->archive, ENOMEM,
+		    "Can't allocate ustar data");
 		return (ARCHIVE_FATAL);
 	}
 	memset(ustar, 0, sizeof(*ustar));
 	a->format_data = ustar;
-
-	a->pad_uncompressed = 1;	/* Mimic gtar in this respect. */
 	a->format_name = "ustar";
+	a->format_options = tk_archive_write_ustar_options;
 	a->format_write_header = tk_archive_write_ustar_header;
 	a->format_write_data = tk_archive_write_ustar_data;
-	a->format_finish = tk_archive_write_ustar_finish;
-	a->format_destroy = tk_archive_write_ustar_destroy;
+	a->format_close = tk_archive_write_ustar_close;
+	a->format_free = tk_archive_write_ustar_free;
 	a->format_finish_entry = tk_archive_write_ustar_finish_entry;
-	a->archive.archive_format = ARCHIVE_FORMAT_TAR_USTAR;
-	a->archive.archive_format_name = "POSIX ustar";
+	a->archive.tk_archive_format = ARCHIVE_FORMAT_TAR_USTAR;
+	a->archive.tk_archive_format_name = "POSIX ustar";
 	return (ARCHIVE_OK);
 }
 
 static int
-tk_archive_write_ustar_header(struct archive_write *a, struct archive_entry *entry)
+tk_archive_write_ustar_options(struct tk_archive_write *a, const char *key,
+    const char *val)
+{
+	struct ustar *ustar = (struct ustar *)a->format_data;
+	int ret = ARCHIVE_FAILED;
+
+	if (strcmp(key, "hdrcharset")  == 0) {
+		if (val == NULL || val[0] == 0)
+			tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_MISC,
+			    "%s: hdrcharset option needs a character-set name",
+			    a->format_name);
+		else {
+			ustar->opt_sconv = tk_archive_string_conversion_to_charset(
+			    &a->archive, val, 0);
+			if (ustar->opt_sconv != NULL)
+				ret = ARCHIVE_OK;
+			else
+				ret = ARCHIVE_FATAL;
+		}
+		return (ret);
+	}
+
+	/* Note: The "warn" return is just to inform the options
+	 * supervisor that we didn't handle it.  It will generate
+	 * a suitable error if no one used this option. */
+	return (ARCHIVE_WARN);
+}
+
+static int
+tk_archive_write_ustar_header(struct tk_archive_write *a, struct tk_archive_entry *entry)
 {
 	char buff[512];
 	int ret, ret2;
 	struct ustar *ustar;
+	struct tk_archive_entry *entry_main;
+	struct tk_archive_string_conv *sconv;
 
 	ustar = (struct ustar *)a->format_data;
+
+	/* Setup default string conversion. */
+	if (ustar->opt_sconv == NULL) {
+		if (!ustar->init_default_conversion) {
+			ustar->sconv_default =
+			    tk_archive_string_default_conversion_for_write(&(a->archive));
+			ustar->init_default_conversion = 1;
+		}
+		sconv = ustar->sconv_default;
+	} else
+		sconv = ustar->opt_sconv;
+
+	/* Sanity check. */
+	if (tk_archive_entry_pathname(entry) == NULL) {
+		tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_MISC,
+		    "Can't record entry in tar file without pathname");
+		return (ARCHIVE_FAILED);
+	}
 
 	/* Only regular files (not hardlinks) have data. */
 	if (tk_archive_entry_hardlink(entry) != NULL ||
@@ -209,37 +270,106 @@ tk_archive_write_ustar_header(struct archive_write *a, struct archive_entry *ent
 
 	if (AE_IFDIR == tk_archive_entry_filetype(entry)) {
 		const char *p;
-		char *t;
+		size_t path_length;
 		/*
 		 * Ensure a trailing '/'.  Modify the entry so
 		 * the client sees the change.
 		 */
-		p = tk_archive_entry_pathname(entry);
-		if (p[strlen(p) - 1] != '/') {
-			t = (char *)malloc(strlen(p) + 2);
-			if (t == NULL) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+		const wchar_t *wp;
+
+		wp = tk_archive_entry_pathname_w(entry);
+		if (wp != NULL && wp[wcslen(wp) -1] != L'/') {
+			struct tk_archive_wstring ws;
+
+			tk_archive_string_init(&ws);
+			path_length = wcslen(wp);
+			if (tk_archive_wstring_ensure(&ws,
+			    path_length + 2) == NULL) {
 				tk_archive_set_error(&a->archive, ENOMEM,
-				"Can't allocate ustar data");
+				    "Can't allocate ustar data");
+				tk_archive_wstring_free(&ws);
 				return(ARCHIVE_FATAL);
 			}
-			strcpy(t, p);
-			strcat(t, "/");
-			tk_archive_entry_copy_pathname(entry, t);
-			free(t);
+			/* Should we keep '\' ? */
+			if (wp[path_length -1] == L'\\')
+				path_length--;
+			tk_archive_wstrncpy(&ws, wp, path_length);
+			tk_archive_wstrappend_wchar(&ws, L'/');
+			tk_archive_entry_copy_pathname_w(entry, ws.s);
+			tk_archive_wstring_free(&ws);
+			p = NULL;
+		} else
+#endif
+			p = tk_archive_entry_pathname(entry);
+		/*
+		 * On Windows, this is a backup operation just in
+		 * case getting WCS failed. On POSIX, this is a
+		 * normal operation.
+		 */
+		if (p != NULL && p[strlen(p) - 1] != '/') {
+			struct tk_archive_string as;
+
+			tk_archive_string_init(&as);
+			path_length = strlen(p);
+			if (tk_archive_string_ensure(&as,
+			    path_length + 2) == NULL) {
+				tk_archive_set_error(&a->archive, ENOMEM,
+				    "Can't allocate ustar data");
+				tk_archive_string_free(&as);
+				return(ARCHIVE_FATAL);
+			}
+#if defined(_WIN32) && !defined(__CYGWIN__)
+			/* NOTE: This might break the pathname
+			 * if the current code page is CP932 and
+			 * the pathname includes a character '\'
+			 * as a part of its multibyte pathname. */
+			if (p[strlen(p) -1] == '\\')
+				path_length--;
+			else
+#endif
+			tk_archive_strncpy(&as, p, path_length);
+			tk_archive_strappend_char(&as, '/');
+			tk_archive_entry_copy_pathname(entry, as.s);
+			tk_archive_string_free(&as);
 		}
 	}
 
-	ret = __archive_write_format_header_ustar(a, buff, entry, -1, 1);
-	if (ret < ARCHIVE_WARN)
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	/* Make sure the path separators in pahtname, hardlink and symlink
+	 * are all slash '/', not the Windows path separator '\'. */
+	entry_main = __la_win_entry_in_posix_pathseparator(entry);
+	if (entry_main == NULL) {
+		tk_archive_set_error(&a->archive, ENOMEM,
+		    "Can't allocate ustar data");
+		return(ARCHIVE_FATAL);
+	}
+	if (entry != entry_main)
+		entry = entry_main;
+	else
+		entry_main = NULL;
+#else
+	entry_main = NULL;
+#endif
+	ret = __tk_archive_write_format_header_ustar(a, buff, entry, -1, 1, sconv);
+	if (ret < ARCHIVE_WARN) {
+		if (entry_main)
+			tk_archive_entry_free(entry_main);
 		return (ret);
-	ret2 = (a->compressor.write)(a, buff, 512);
-	if (ret2 < ARCHIVE_WARN)
+	}
+	ret2 = __tk_archive_write_output(a, buff, 512);
+	if (ret2 < ARCHIVE_WARN) {
+		if (entry_main)
+			tk_archive_entry_free(entry_main);
 		return (ret2);
+	}
 	if (ret2 < ret)
 		ret = ret2;
 
 	ustar->entry_bytes_remaining = tk_archive_entry_size(entry);
 	ustar->entry_padding = 0x1ff & (-(int64_t)ustar->entry_bytes_remaining);
+	if (entry_main)
+		tk_archive_entry_free(entry_main);
 	return (ret);
 }
 
@@ -254,11 +384,12 @@ tk_archive_write_ustar_header(struct archive_write *a, struct archive_entry *ent
  * This is exported so that other 'tar' formats can use it.
  */
 int
-__archive_write_format_header_ustar(struct archive_write *a, char h[512],
-    struct archive_entry *entry, int tartype, int strict)
+__tk_archive_write_format_header_ustar(struct tk_archive_write *a, char h[512],
+    struct tk_archive_entry *entry, int tartype, int strict,
+    struct tk_archive_string_conv *sconv)
 {
 	unsigned int checksum;
-	int i, ret;
+	int i, r, ret;
 	size_t copy_length;
 	const char *p, *pp;
 	int mytartype;
@@ -277,13 +408,23 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 	 * are allowed to exactly fill their destination (without null),
 	 * I use memcpy(dest, src, strlen()) here a lot to copy strings.
 	 */
-
-	pp = tk_archive_entry_pathname(entry);
-	if (strlen(pp) <= USTAR_name_size)
-		memcpy(h + USTAR_name_offset, pp, strlen(pp));
+	r = tk_archive_entry_pathname_l(entry, &pp, &copy_length, sconv);
+	if (r != 0) {
+		if (errno == ENOMEM) {
+			tk_archive_set_error(&a->archive, ENOMEM,
+			    "Can't allocate memory for Pathname");
+			return (ARCHIVE_FATAL);
+		}
+		tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
+		    "Can't translate pathname '%s' to %s",
+		    pp, tk_archive_string_conversion_charset_name(sconv));
+		ret = ARCHIVE_WARN;
+	}
+	if (copy_length <= USTAR_name_size)
+		memcpy(h + USTAR_name_offset, pp, copy_length);
 	else {
 		/* Store in two pieces, splitting at a '/'. */
-		p = strchr(pp + strlen(pp) - USTAR_name_size - 1, '/');
+		p = strchr(pp + copy_length - USTAR_name_size - 1, '/');
 		/*
 		 * Look for the next '/' if we chose the first character
 		 * as the separator.  (ustar format doesn't permit
@@ -302,7 +443,7 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 			 * The only feasible separator is a final '/';
 			 * this would result in a non-empty prefix and
 			 * an empty name, which POSIX doesn't
-			 * explicity forbid, but it just feels wrong.
+			 * explicitly forbid, but it just feels wrong.
 			 */
 			tk_archive_set_error(&a->archive, ENAMETOOLONG,
 			    "Pathname too long");
@@ -315,17 +456,42 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 		} else {
 			/* Copy prefix and remainder to appropriate places */
 			memcpy(h + USTAR_prefix_offset, pp, p - pp);
-			memcpy(h + USTAR_name_offset, p + 1, pp + strlen(pp) - p - 1);
+			memcpy(h + USTAR_name_offset, p + 1,
+			    pp + copy_length - p - 1);
 		}
 	}
 
-	p = tk_archive_entry_hardlink(entry);
-	if (p != NULL)
+	r = tk_archive_entry_hardlink_l(entry, &p, &copy_length, sconv);
+	if (r != 0) {
+		if (errno == ENOMEM) {
+			tk_archive_set_error(&a->archive, ENOMEM,
+			    "Can't allocate memory for Linkname");
+			return (ARCHIVE_FATAL);
+		}
+		tk_archive_set_error(&a->archive,
+		    ARCHIVE_ERRNO_FILE_FORMAT,
+		    "Can't translate linkname '%s' to %s",
+		    p, tk_archive_string_conversion_charset_name(sconv));
+		ret = ARCHIVE_WARN;
+	}
+	if (copy_length > 0)
 		mytartype = '1';
-	else
-		p = tk_archive_entry_symlink(entry);
-	if (p != NULL && p[0] != '\0') {
-		copy_length = strlen(p);
+	else {
+		r = tk_archive_entry_symlink_l(entry, &p, &copy_length, sconv);
+		if (r != 0) {
+			if (errno == ENOMEM) {
+				tk_archive_set_error(&a->archive, ENOMEM,
+				    "Can't allocate memory for Linkname");
+				return (ARCHIVE_FATAL);
+			}
+			tk_archive_set_error(&a->archive,
+			    ARCHIVE_ERRNO_FILE_FORMAT,
+			    "Can't translate linkname '%s' to %s",
+			    p, tk_archive_string_conversion_charset_name(sconv));
+			ret = ARCHIVE_WARN;
+		}
+	}
+	if (copy_length > 0) {
 		if (copy_length > USTAR_linkname_size) {
 			tk_archive_set_error(&a->archive, ENAMETOOLONG,
 			    "Link contents too long");
@@ -335,9 +501,20 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 		memcpy(h + USTAR_linkname_offset, p, copy_length);
 	}
 
-	p = tk_archive_entry_uname(entry);
-	if (p != NULL && p[0] != '\0') {
-		copy_length = strlen(p);
+	r = tk_archive_entry_uname_l(entry, &p, &copy_length, sconv);
+	if (r != 0) {
+		if (errno == ENOMEM) {
+			tk_archive_set_error(&a->archive, ENOMEM,
+			    "Can't allocate memory for Uname");
+			return (ARCHIVE_FATAL);
+		}
+		tk_archive_set_error(&a->archive,
+		    ARCHIVE_ERRNO_FILE_FORMAT,
+		    "Can't translate uname '%s' to %s",
+		    p, tk_archive_string_conversion_charset_name(sconv));
+		ret = ARCHIVE_WARN;
+	}
+	if (copy_length > 0) {
 		if (copy_length > USTAR_uname_size) {
 			tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_MISC,
 			    "Username too long");
@@ -347,9 +524,20 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 		memcpy(h + USTAR_uname_offset, p, copy_length);
 	}
 
-	p = tk_archive_entry_gname(entry);
-	if (p != NULL && p[0] != '\0') {
-		copy_length = strlen(p);
+	r = tk_archive_entry_gname_l(entry, &p, &copy_length, sconv);
+	if (r != 0) {
+		if (errno == ENOMEM) {
+			tk_archive_set_error(&a->archive, ENOMEM,
+			    "Can't allocate memory for Gname");
+			return (ARCHIVE_FATAL);
+		}
+		tk_archive_set_error(&a->archive,
+		    ARCHIVE_ERRNO_FILE_FORMAT,
+		    "Can't translate gname '%s' to %s",
+		    p, tk_archive_string_conversion_charset_name(sconv));
+		ret = ARCHIVE_WARN;
+	}
+	if (copy_length > 0) {
 		if (strlen(p) > USTAR_gname_size) {
 			tk_archive_set_error(&a->archive, ARCHIVE_ERRNO_MISC,
 			    "Group name too long");
@@ -359,27 +547,36 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 		memcpy(h + USTAR_gname_offset, p, copy_length);
 	}
 
-	if (format_number(tk_archive_entry_mode(entry) & 07777, h + USTAR_mode_offset, USTAR_mode_size, USTAR_mode_max_size, strict)) {
-		tk_archive_set_error(&a->archive, ERANGE, "Numeric mode too large");
+	if (format_number(tk_archive_entry_mode(entry) & 07777,
+	    h + USTAR_mode_offset, USTAR_mode_size, USTAR_mode_max_size, strict)) {
+		tk_archive_set_error(&a->archive, ERANGE,
+		    "Numeric mode too large");
 		ret = ARCHIVE_FAILED;
 	}
 
-	if (format_number(tk_archive_entry_uid(entry), h + USTAR_uid_offset, USTAR_uid_size, USTAR_uid_max_size, strict)) {
-		tk_archive_set_error(&a->archive, ERANGE, "Numeric user ID too large");
+	if (format_number(tk_archive_entry_uid(entry),
+	    h + USTAR_uid_offset, USTAR_uid_size, USTAR_uid_max_size, strict)) {
+		tk_archive_set_error(&a->archive, ERANGE,
+		    "Numeric user ID too large");
 		ret = ARCHIVE_FAILED;
 	}
 
-	if (format_number(tk_archive_entry_gid(entry), h + USTAR_gid_offset, USTAR_gid_size, USTAR_gid_max_size, strict)) {
-		tk_archive_set_error(&a->archive, ERANGE, "Numeric group ID too large");
+	if (format_number(tk_archive_entry_gid(entry),
+	    h + USTAR_gid_offset, USTAR_gid_size, USTAR_gid_max_size, strict)) {
+		tk_archive_set_error(&a->archive, ERANGE,
+		    "Numeric group ID too large");
 		ret = ARCHIVE_FAILED;
 	}
 
-	if (format_number(tk_archive_entry_size(entry), h + USTAR_size_offset, USTAR_size_size, USTAR_size_max_size, strict)) {
-		tk_archive_set_error(&a->archive, ERANGE, "File size out of range");
+	if (format_number(tk_archive_entry_size(entry),
+	    h + USTAR_size_offset, USTAR_size_size, USTAR_size_max_size, strict)) {
+		tk_archive_set_error(&a->archive, ERANGE,
+		    "File size out of range");
 		ret = ARCHIVE_FAILED;
 	}
 
-	if (format_number(tk_archive_entry_mtime(entry), h + USTAR_mtime_offset, USTAR_mtime_size, USTAR_mtime_max_size, strict)) {
+	if (format_number(tk_archive_entry_mtime(entry),
+	    h + USTAR_mtime_offset, USTAR_mtime_size, USTAR_mtime_max_size, strict)) {
 		tk_archive_set_error(&a->archive, ERANGE,
 		    "File modification time too large");
 		ret = ARCHIVE_FAILED;
@@ -387,15 +584,17 @@ __archive_write_format_header_ustar(struct archive_write *a, char h[512],
 
 	if (tk_archive_entry_filetype(entry) == AE_IFBLK
 	    || tk_archive_entry_filetype(entry) == AE_IFCHR) {
-		if (format_number(tk_archive_entry_rdevmajor(entry), h + USTAR_rdevmajor_offset,
-			USTAR_rdevmajor_size, USTAR_rdevmajor_max_size, strict)) {
+		if (format_number(tk_archive_entry_rdevmajor(entry),
+		    h + USTAR_rdevmajor_offset, USTAR_rdevmajor_size,
+		    USTAR_rdevmajor_max_size, strict)) {
 			tk_archive_set_error(&a->archive, ERANGE,
 			    "Major device number too large");
 			ret = ARCHIVE_FAILED;
 		}
 
-		if (format_number(tk_archive_entry_rdevminor(entry), h + USTAR_rdevminor_offset,
-			USTAR_rdevminor_size, USTAR_rdevminor_max_size, strict)) {
+		if (format_number(tk_archive_entry_rdevminor(entry),
+		    h + USTAR_rdevminor_offset, USTAR_rdevminor_size,
+		    USTAR_rdevminor_max_size, strict)) {
 			tk_archive_set_error(&a->archive, ERANGE,
 			    "Minor device number too large");
 			ret = ARCHIVE_FAILED;
@@ -519,19 +718,13 @@ format_octal(int64_t v, char *p, int s)
 }
 
 static int
-tk_archive_write_ustar_finish(struct archive_write *a)
+tk_archive_write_ustar_close(struct tk_archive_write *a)
 {
-	int r;
-
-	if (a->compressor.write == NULL)
-		return (ARCHIVE_OK);
-
-	r = write_nulls(a, 512*2);
-	return (r);
+	return (__tk_archive_write_nulls(a, 512*2));
 }
 
 static int
-tk_archive_write_ustar_destroy(struct archive_write *a)
+tk_archive_write_ustar_free(struct tk_archive_write *a)
 {
 	struct ustar *ustar;
 
@@ -542,44 +735,28 @@ tk_archive_write_ustar_destroy(struct archive_write *a)
 }
 
 static int
-tk_archive_write_ustar_finish_entry(struct archive_write *a)
+tk_archive_write_ustar_finish_entry(struct tk_archive_write *a)
 {
 	struct ustar *ustar;
 	int ret;
 
 	ustar = (struct ustar *)a->format_data;
-	ret = write_nulls(a,
-	    ustar->entry_bytes_remaining + ustar->entry_padding);
+	ret = __tk_archive_write_nulls(a,
+	    (size_t)(ustar->entry_bytes_remaining + ustar->entry_padding));
 	ustar->entry_bytes_remaining = ustar->entry_padding = 0;
 	return (ret);
 }
 
-static int
-write_nulls(struct archive_write *a, size_t padding)
-{
-	int ret;
-	size_t to_write;
-
-	while (padding > 0) {
-		to_write = padding < a->null_length ? padding : a->null_length;
-		ret = (a->compressor.write)(a, a->nulls, to_write);
-		if (ret != ARCHIVE_OK)
-			return (ret);
-		padding -= to_write;
-	}
-	return (ARCHIVE_OK);
-}
-
 static ssize_t
-tk_archive_write_ustar_data(struct archive_write *a, const void *buff, size_t s)
+tk_archive_write_ustar_data(struct tk_archive_write *a, const void *buff, size_t s)
 {
 	struct ustar *ustar;
 	int ret;
 
 	ustar = (struct ustar *)a->format_data;
 	if (s > ustar->entry_bytes_remaining)
-		s = ustar->entry_bytes_remaining;
-	ret = (a->compressor.write)(a, buff, s);
+		s = (size_t)ustar->entry_bytes_remaining;
+	ret = __tk_archive_write_output(a, buff, s);
 	ustar->entry_bytes_remaining -= s;
 	if (ret != ARCHIVE_OK)
 		return (ret);

@@ -46,7 +46,7 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_write_set_format_shar.c 189438 2
 struct shar {
 	int			 dump;
 	int			 end_of_line;
-	struct archive_entry	*entry;
+	struct tk_archive_entry	*entry;
 	int			 has_data;
 	char			*last_dir;
 
@@ -55,26 +55,26 @@ struct shar {
 	size_t			 outpos;
 
 	int			 wrote_header;
-	struct archive_string	 work;
-	struct archive_string	 quoted_name;
+	struct tk_archive_string	 work;
+	struct tk_archive_string	 quoted_name;
 };
 
-static int	tk_archive_write_shar_finish(struct archive_write *);
-static int	tk_archive_write_shar_destroy(struct archive_write *);
-static int	tk_archive_write_shar_header(struct archive_write *,
-		    struct archive_entry *);
-static ssize_t	tk_archive_write_shar_data_sed(struct archive_write *,
+static int	tk_archive_write_shar_close(struct tk_archive_write *);
+static int	tk_archive_write_shar_free(struct tk_archive_write *);
+static int	tk_archive_write_shar_header(struct tk_archive_write *,
+		    struct tk_archive_entry *);
+static ssize_t	tk_archive_write_shar_data_sed(struct tk_archive_write *,
 		    const void * buff, size_t);
-static ssize_t	tk_archive_write_shar_data_uuencode(struct archive_write *,
+static ssize_t	tk_archive_write_shar_data_uuencode(struct tk_archive_write *,
 		    const void * buff, size_t);
-static int	tk_archive_write_shar_finish_entry(struct archive_write *);
+static int	tk_archive_write_shar_finish_entry(struct tk_archive_write *);
 
 /*
  * Copy the given string to the buffer, quoting all shell meta characters
  * found.
  */
 static void
-shar_quote(struct archive_string *buf, const char *str, int in_shell)
+shar_quote(struct tk_archive_string *buf, const char *str, int in_shell)
 {
 	static const char meta[] = "\n \t'`\";&<>()|*?{}[]\\$!#^~";
 	size_t len;
@@ -103,12 +103,15 @@ shar_quote(struct archive_string *buf, const char *str, int in_shell)
 int
 tk_archive_write_set_format_shar(struct archive *_a)
 {
-	struct archive_write *a = (struct archive_write *)_a;
+	struct tk_archive_write *a = (struct tk_archive_write *)_a;
 	struct shar *shar;
 
+	tk_archive_check_magic(_a, ARCHIVE_WRITE_MAGIC,
+	    ARCHIVE_STATE_NEW, "tk_archive_write_set_format_shar");
+
 	/* If someone else was already registered, unregister them. */
-	if (a->format_destroy != NULL)
-		(a->format_destroy)(a);
+	if (a->format_free != NULL)
+		(a->format_free)(a);
 
 	shar = (struct shar *)malloc(sizeof(*shar));
 	if (shar == NULL) {
@@ -119,16 +122,14 @@ tk_archive_write_set_format_shar(struct archive *_a)
 	tk_archive_string_init(&shar->work);
 	tk_archive_string_init(&shar->quoted_name);
 	a->format_data = shar;
-
-	a->pad_uncompressed = 0;
 	a->format_name = "shar";
 	a->format_write_header = tk_archive_write_shar_header;
-	a->format_finish = tk_archive_write_shar_finish;
-	a->format_destroy = tk_archive_write_shar_destroy;
+	a->format_close = tk_archive_write_shar_close;
+	a->format_free = tk_archive_write_shar_free;
 	a->format_write_data = tk_archive_write_shar_data_sed;
 	a->format_finish_entry = tk_archive_write_shar_finish_entry;
-	a->archive.archive_format = ARCHIVE_FORMAT_SHAR_BASE;
-	a->archive.archive_format_name = "shar";
+	a->archive.tk_archive_format = ARCHIVE_FORMAT_SHAR_BASE;
+	a->archive.tk_archive_format_name = "shar";
 	return (ARCHIVE_OK);
 }
 
@@ -141,20 +142,20 @@ tk_archive_write_set_format_shar(struct archive *_a)
 int
 tk_archive_write_set_format_shar_dump(struct archive *_a)
 {
-	struct archive_write *a = (struct archive_write *)_a;
+	struct tk_archive_write *a = (struct tk_archive_write *)_a;
 	struct shar *shar;
 
 	tk_archive_write_set_format_shar(&a->archive);
 	shar = (struct shar *)a->format_data;
 	shar->dump = 1;
 	a->format_write_data = tk_archive_write_shar_data_uuencode;
-	a->archive.archive_format = ARCHIVE_FORMAT_SHAR_DUMP;
-	a->archive.archive_format_name = "shar dump";
+	a->archive.tk_archive_format = ARCHIVE_FORMAT_SHAR_DUMP;
+	a->archive.tk_archive_format_name = "shar dump";
 	return (ARCHIVE_OK);
 }
 
 static int
-tk_archive_write_shar_header(struct archive_write *a, struct archive_entry *entry)
+tk_archive_write_shar_header(struct tk_archive_write *a, struct tk_archive_entry *entry)
 {
 	const char *linkname;
 	const char *name;
@@ -266,12 +267,12 @@ tk_archive_write_shar_header(struct archive_write *a, struct archive_entry *entr
 				    shar->quoted_name.s, shar->quoted_name.s);
 			} else {
 				if (shar->dump) {
+					unsigned int mode = tk_archive_entry_mode(entry) & 0777;
 					tk_archive_string_sprintf(&shar->work,
 					    "uudecode -p > %s << 'SHAR_END'\n",
 					    shar->quoted_name.s);
 					tk_archive_string_sprintf(&shar->work,
-					    "begin %o ",
-					    tk_archive_entry_mode(entry) & 0777);
+					    "begin %o ", mode);
 					shar_quote(&shar->work, name, 0);
 					tk_archive_strcat(&shar->work, "\n");
 				} else {
@@ -308,15 +309,15 @@ tk_archive_write_shar_header(struct archive_write *a, struct archive_entry *entr
 			break;
 		case AE_IFCHR:
 			tk_archive_string_sprintf(&shar->work,
-			    "mknod %s c %d %d\n", shar->quoted_name.s,
-			    tk_archive_entry_rdevmajor(entry),
-			    tk_archive_entry_rdevminor(entry));
+			    "mknod %s c %ju %ju\n", shar->quoted_name.s,
+			    (uintmax_t)tk_archive_entry_rdevmajor(entry),
+			    (uintmax_t)tk_archive_entry_rdevminor(entry));
 			break;
 		case AE_IFBLK:
 			tk_archive_string_sprintf(&shar->work,
-			    "mknod %s b %d %d\n", shar->quoted_name.s,
-			    tk_archive_entry_rdevmajor(entry),
-			    tk_archive_entry_rdevminor(entry));
+			    "mknod %s b %ju %ju\n", shar->quoted_name.s,
+			    (uintmax_t)tk_archive_entry_rdevmajor(entry),
+			    (uintmax_t)tk_archive_entry_rdevminor(entry));
 			break;
 		default:
 			return (ARCHIVE_WARN);
@@ -327,7 +328,7 @@ tk_archive_write_shar_header(struct archive_write *a, struct archive_entry *entr
 }
 
 static ssize_t
-tk_archive_write_shar_data_sed(struct archive_write *a, const void *buff, size_t n)
+tk_archive_write_shar_data_sed(struct tk_archive_write *a, const void *buff, size_t n)
 {
 	static const size_t ensured = 65533;
 	struct shar *shar;
@@ -349,11 +350,13 @@ tk_archive_write_shar_data_sed(struct archive_write *a, const void *buff, size_t
 	 * twice before entering the loop, so make sure three additional
 	 * bytes can be written.
 	 */
-	if (tk_archive_string_ensure(&shar->work, ensured + 3) == NULL)
-		__archive_errx(1, "Out of memory");
+	if (tk_archive_string_ensure(&shar->work, ensured + 3) == NULL) {
+		tk_archive_set_error(&a->archive, ENOMEM, "Out of memory");
+		return (ARCHIVE_FATAL);
+	}
 
 	if (shar->work.length > ensured) {
-		ret = (*a->compressor.write)(a, shar->work.s,
+		ret = __tk_archive_write_output(a, shar->work.s,
 		    shar->work.length);
 		if (ret != ARCHIVE_OK)
 			return (ARCHIVE_FATAL);
@@ -377,7 +380,7 @@ tk_archive_write_shar_data_sed(struct archive_write *a, const void *buff, size_t
 
 		if (buf >= buf_end) {
 			shar->work.length = buf - shar->work.s;
-			ret = (*a->compressor.write)(a, shar->work.s,
+			ret = __tk_archive_write_output(a, shar->work.s,
 			    shar->work.length);
 			if (ret != ARCHIVE_OK)
 				return (ARCHIVE_FATAL);
@@ -406,16 +409,18 @@ uuencode_group(const char _in[3], char out[4])
 	out[3] = UUENC( 0x3f & t );
 }
 
-static void
-uuencode_line(struct shar *shar, const char *inbuf, size_t len)
+static int
+_uuencode_line(struct tk_archive_write *a, struct shar *shar, const char *inbuf, size_t len)
 {
-	char tmp_buf[3], *buf;
+	char *buf;
 	size_t alloc_len;
 
 	/* len <= 45 -> expanded to 60 + len byte + new line */
 	alloc_len = shar->work.length + 62;
-	if (tk_archive_string_ensure(&shar->work, alloc_len) == NULL)
-		__archive_errx(1, "Out of memory");
+	if (tk_archive_string_ensure(&shar->work, alloc_len) == NULL) {
+		tk_archive_set_error(&a->archive, ENOMEM, "Out of memory");
+		return (ARCHIVE_FATAL);
+	}
 
 	buf = shar->work.s + shar->work.length;
 	*buf++ = UUENC(len);
@@ -426,23 +431,35 @@ uuencode_line(struct shar *shar, const char *inbuf, size_t len)
 		buf += 4;
 	}
 	if (len != 0) {
+		char tmp_buf[3];
 		tmp_buf[0] = inbuf[0];
 		if (len == 1)
 			tmp_buf[1] = '\0';
 		else
 			tmp_buf[1] = inbuf[1];
 		tmp_buf[2] = '\0';
-		uuencode_group(inbuf, buf);
+		uuencode_group(tmp_buf, buf);
 		buf += 4;
 	}
 	*buf++ = '\n';
-	if ((buf - shar->work.s) > (ptrdiff_t)(shar->work.length + 62))
-		__archive_errx(1, "Buffer overflow");
+	if ((buf - shar->work.s) > (ptrdiff_t)(shar->work.length + 62)) {
+		tk_archive_set_error(&a->archive,
+		    ARCHIVE_ERRNO_MISC, "Buffer overflow");
+		return (ARCHIVE_FATAL);
+	}
 	shar->work.length = buf - shar->work.s;
+	return (ARCHIVE_OK);
 }
 
+#define uuencode_line(__a, __shar, __inbuf, __len) \
+	do { \
+		int r = _uuencode_line(__a, __shar, __inbuf, __len); \
+		if (r != ARCHIVE_OK) \
+			return (ARCHIVE_FATAL); \
+	} while (0)
+
 static ssize_t
-tk_archive_write_shar_data_uuencode(struct archive_write *a, const void *buff,
+tk_archive_write_shar_data_uuencode(struct tk_archive_write *a, const void *buff,
     size_t length)
 {
 	struct shar *shar;
@@ -464,7 +481,7 @@ tk_archive_write_shar_data_uuencode(struct archive_write *a, const void *buff,
 			shar->outpos += n;
 			return length;
 		}
-		uuencode_line(shar, shar->outbuff, 45);
+		uuencode_line(a, shar, shar->outbuff, 45);
 		src += n;
 		n = length - n;
 	} else {
@@ -472,13 +489,13 @@ tk_archive_write_shar_data_uuencode(struct archive_write *a, const void *buff,
 	}
 
 	while (n >= 45) {
-		uuencode_line(shar, src, 45);
+		uuencode_line(a, shar, src, 45);
 		src += 45;
 		n -= 45;
 
 		if (shar->work.length < 65536)
 			continue;
-		ret = (*a->compressor.write)(a, shar->work.s,
+		ret = __tk_archive_write_output(a, shar->work.s,
 		    shar->work.length);
 		if (ret != ARCHIVE_OK)
 			return (ARCHIVE_FATAL);
@@ -492,7 +509,7 @@ tk_archive_write_shar_data_uuencode(struct archive_write *a, const void *buff,
 }
 
 static int
-tk_archive_write_shar_finish_entry(struct archive_write *a)
+tk_archive_write_shar_finish_entry(struct tk_archive_write *a)
 {
 	const char *g, *p, *u;
 	struct shar *shar;
@@ -506,7 +523,7 @@ tk_archive_write_shar_finish_entry(struct archive_write *a)
 		/* Finish uuencoded data. */
 		if (shar->has_data) {
 			if (shar->outpos > 0)
-				uuencode_line(shar, shar->outbuff,
+				uuencode_line(a, shar, shar->outbuff,
 				    shar->outpos);
 			tk_archive_strcat(&shar->work, "`\nend\n");
 			tk_archive_strcat(&shar->work, "SHAR_END\n");
@@ -517,7 +534,7 @@ tk_archive_write_shar_finish_entry(struct archive_write *a)
 		 * directories; defer that to end of script.
 		 */
 		tk_archive_string_sprintf(&shar->work, "chmod %o ",
-		    tk_archive_entry_mode(shar->entry) & 07777);
+		    (unsigned int)(tk_archive_entry_mode(shar->entry) & 07777));
 		shar_quote(&shar->work, tk_archive_entry_pathname(shar->entry), 1);
 		tk_archive_strcat(&shar->work, "\n");
 
@@ -537,8 +554,7 @@ tk_archive_write_shar_finish_entry(struct archive_write *a)
 		}
 
 		if ((p = tk_archive_entry_fflags_text(shar->entry)) != NULL) {
-			tk_archive_string_sprintf(&shar->work, "chflags %s ",
-			    p, tk_archive_entry_pathname(shar->entry));
+			tk_archive_string_sprintf(&shar->work, "chflags %s ", p);
 			shar_quote(&shar->work,
 			    tk_archive_entry_pathname(shar->entry), 1);
 			tk_archive_strcat(&shar->work, "\n");
@@ -561,7 +577,7 @@ tk_archive_write_shar_finish_entry(struct archive_write *a)
 	if (shar->work.length < 65536)
 		return (ARCHIVE_OK);
 
-	ret = (*a->compressor.write)(a, shar->work.s, shar->work.length);
+	ret = __tk_archive_write_output(a, shar->work.s, shar->work.length);
 	if (ret != ARCHIVE_OK)
 		return (ARCHIVE_FATAL);
 	tk_archive_string_empty(&shar->work);
@@ -570,7 +586,7 @@ tk_archive_write_shar_finish_entry(struct archive_write *a)
 }
 
 static int
-tk_archive_write_shar_finish(struct archive_write *a)
+tk_archive_write_shar_close(struct tk_archive_write *a)
 {
 	struct shar *shar;
 	int ret;
@@ -593,7 +609,7 @@ tk_archive_write_shar_finish(struct archive_write *a)
 
 	tk_archive_strcat(&shar->work, "exit\n");
 
-	ret = (*a->compressor.write)(a, shar->work.s, shar->work.length);
+	ret = __tk_archive_write_output(a, shar->work.s, shar->work.length);
 	if (ret != ARCHIVE_OK)
 		return (ARCHIVE_FATAL);
 
@@ -608,7 +624,7 @@ tk_archive_write_shar_finish(struct archive_write *a)
 }
 
 static int
-tk_archive_write_shar_destroy(struct archive_write *a)
+tk_archive_write_shar_free(struct tk_archive_write *a)
 {
 	struct shar *shar;
 

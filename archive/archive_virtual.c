@@ -31,6 +31,30 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_virtual.c 201098 2009-12-28 02:5
 #include "archive_private.h"
 
 int
+tk_archive_filter_code(struct archive *a, int n)
+{
+	return ((a->vtable->tk_archive_filter_code)(a, n));
+}
+
+int
+tk_archive_filter_count(struct archive *a)
+{
+	return ((a->vtable->tk_archive_filter_count)(a));
+}
+
+const char *
+tk_archive_filter_name(struct archive *a, int n)
+{
+	return ((a->vtable->tk_archive_filter_name)(a, n));
+}
+
+int64_t
+tk_archive_filter_bytes(struct archive *a, int n)
+{
+	return ((a->vtable->tk_archive_filter_bytes)(a, n));
+}
+
+int
 tk_archive_write_close(struct archive *a)
 {
 	return ((a->vtable->tk_archive_close)(a));
@@ -42,29 +66,49 @@ tk_archive_read_close(struct archive *a)
 	return ((a->vtable->tk_archive_close)(a));
 }
 
-#if ARCHIVE_API_VERSION > 1
+int
+tk_archive_write_fail(struct archive *a)
+{
+	a->state = ARCHIVE_STATE_FATAL;
+	return a->state;
+}
+
+int
+tk_archive_write_free(struct archive *a)
+{
+	if (a == NULL)
+		return (ARCHIVE_OK);
+	return ((a->vtable->tk_archive_free)(a));
+}
+
+#if ARCHIVE_VERSION_NUMBER < 4000000
+/* For backwards compatibility; will be removed with libarchive 4.0. */
 int
 tk_archive_write_finish(struct archive *a)
 {
-	return ((a->vtable->tk_archive_finish)(a));
-}
-#else
-/* Temporarily allow library to compile with either 1.x or 2.0 API. */
-void
-tk_archive_write_finish(struct archive *a)
-{
-	(void)(a->vtable->tk_archive_finish)(a);
+	return tk_archive_write_free(a);
 }
 #endif
 
 int
-tk_archive_read_finish(struct archive *a)
+tk_archive_read_free(struct archive *a)
 {
-	return ((a->vtable->tk_archive_finish)(a));
+	if (a == NULL)
+		return (ARCHIVE_OK);
+	return ((a->vtable->tk_archive_free)(a));
 }
 
+#if ARCHIVE_VERSION_NUMBER < 4000000
+/* For backwards compatibility; will be removed with libarchive 4.0. */
 int
-tk_archive_write_header(struct archive *a, struct archive_entry *entry)
+tk_archive_read_finish(struct archive *a)
+{
+	return tk_archive_read_free(a);
+}
+#endif
+
+int
+tk_archive_write_header(struct archive *a, struct tk_archive_entry *entry)
 {
 	++a->file_count;
 	return ((a->vtable->tk_archive_write_header)(a, entry));
@@ -76,19 +120,39 @@ tk_archive_write_finish_entry(struct archive *a)
 	return ((a->vtable->tk_archive_write_finish_entry)(a));
 }
 
-#if ARCHIVE_API_VERSION > 1
 ssize_t
-#else
-/* Temporarily allow library to compile with either 1.x or 2.0 API. */
-int
-#endif
 tk_archive_write_data(struct archive *a, const void *buff, size_t s)
 {
 	return ((a->vtable->tk_archive_write_data)(a, buff, s));
 }
 
 ssize_t
-tk_archive_write_data_block(struct archive *a, const void *buff, size_t s, off_t o)
+tk_archive_write_data_block(struct archive *a, const void *buff, size_t s, int64_t o)
 {
+	if (a->vtable->tk_archive_write_data_block == NULL) {
+		tk_archive_set_error(a, ARCHIVE_ERRNO_MISC,
+		    "tk_archive_write_data_block not supported");
+		a->state = ARCHIVE_STATE_FATAL;
+		return (ARCHIVE_FATAL);
+	}
 	return ((a->vtable->tk_archive_write_data_block)(a, buff, s, o));
+}
+
+int
+tk_archive_read_next_header(struct archive *a, struct tk_archive_entry **entry)
+{
+	return ((a->vtable->tk_archive_read_next_header)(a, entry));
+}
+
+int
+tk_archive_read_next_header2(struct archive *a, struct tk_archive_entry *entry)
+{
+	return ((a->vtable->tk_archive_read_next_header2)(a, entry));
+}
+
+int
+tk_archive_read_data_block(struct archive *a,
+    const void **buff, size_t *s, int64_t *o)
+{
+	return ((a->vtable->tk_archive_read_data_block)(a, buff, s, o));
 }
