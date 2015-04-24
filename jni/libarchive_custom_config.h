@@ -521,7 +521,7 @@
 /* #define HAVE_SYS_XATTR_H 1 */
 
 /* Define to 1 if you have the `timegm' function. */
-#define HAVE_TIMEGM 1
+//#define HAVE_TIMEGM 1
 
 /* Define to 1 if you have the <time.h> header file. */
 #define HAVE_TIME_H 1

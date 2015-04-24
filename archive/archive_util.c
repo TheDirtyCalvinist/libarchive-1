@@ -446,11 +446,13 @@ __tk_archive_mktemp(const char *tmpdir)
 
 	fd = open("/dev/random", O_RDONLY | O_CLOEXEC);
 	__tk_archive_ensure_cloexec_flag(fd);
-	if (fd < 0)
+	if (fd < 0) {
 		seed = time(NULL);
-	else {
+		srand(seed);
+	} else {
 		if (read(fd, &seed, sizeof(seed)) < 0)
 			seed = time(NULL);
+		srand(seed);
 		close(fd);
 	}
 	do {
@@ -458,7 +460,7 @@ __tk_archive_mktemp(const char *tmpdir)
 
 		p = tp;
 		while (p < ep)
-			*p++ = num[((unsigned)rand_r(&seed)) % sizeof(num)];
+			*p++ = num[((unsigned)rand()) % sizeof(num)];
 		fd = open(temp_name.s, O_CREAT | O_EXCL | O_RDWR | O_CLOEXEC,
 			  0600);
 	} while (fd < 0 && errno == EEXIST);
