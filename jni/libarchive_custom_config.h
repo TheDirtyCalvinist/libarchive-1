@@ -595,6 +595,9 @@
 /* Define to 1 if you have the <zlib.h> header file. */
 #define HAVE_ZLIB_H 1
 
+/* Define to 1 if you have the <lzma.h> header file. */
+#define HAVE_LZMA_H 1
+
 #define HAVE_SYS_UTSNAME_H 1
 
 /* Version number of libarchive as a single integer */

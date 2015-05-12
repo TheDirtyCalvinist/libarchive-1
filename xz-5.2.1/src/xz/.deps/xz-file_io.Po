@@ -1,0 +1,328 @@
+xz-file_io.o: file_io.c private.h ../../src/common/sysdefs.h \
+ ../../config.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stddef.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/inttypes.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdint.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdint.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_wchar_limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/android/api-level.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs_elf.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/syslimits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/internal_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/syslimits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page_32.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdlib.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/string.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/malloc.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/alloca.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/strings.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/posix_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/stddef.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/compiler.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/asm/posix_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/features.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types_32.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/kernel.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/sysmacros.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/memory.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/assert.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdbool.h \
+ ../../src/common/mythread.h ../../src/common/sysdefs.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/time.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/time.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/pthread.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/time.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/siginfo.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/siginfo.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/signal.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/signal.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/signal.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/sigcontext.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sched.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno-base.h \
+ ../../src/liblzma/api/lzma.h ../../src/liblzma/api/lzma/version.h \
+ ../../src/liblzma/api/lzma/base.h ../../src/liblzma/api/lzma/vli.h \
+ ../../src/liblzma/api/lzma/check.h ../../src/liblzma/api/lzma/filter.h \
+ ../../src/liblzma/api/lzma/bcj.h ../../src/liblzma/api/lzma/delta.h \
+ ../../src/liblzma/api/lzma/lzma12.h \
+ ../../src/liblzma/api/lzma/container.h \
+ ../../src/liblzma/api/lzma/stream_flags.h \
+ ../../src/liblzma/api/lzma/block.h ../../src/liblzma/api/lzma/index.h \
+ ../../src/liblzma/api/lzma/index_hash.h \
+ ../../src/liblzma/api/lzma/hardware.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/stat.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/stat.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/endian.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/endian.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/endian.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/locale.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/stdio.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdarg.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/unistd.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/select.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/sysconf.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/capability.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/pathconf.h \
+ ../../src/common/tuklib_gettext.h ../../src/common/tuklib_common.h \
+ ../../src/common/tuklib_config.h ../../src/common/tuklib_progname.h \
+ ../../src/common/tuklib_exit.h ../../src/common/tuklib_mbstr.h main.h \
+ mytime.h coder.h message.h args.h hardware.h file_io.h options.h \
+ signals.h suffix.h util.h list.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/fcntl.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/fcntl.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/fcntl.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/fcntl.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/poll.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/poll.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/poll.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/poll.h \
+ ../../src/common/tuklib_open_stdxxx.h
+
+private.h:
+
+../../src/common/sysdefs.h:
+
+../../config.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stddef.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/inttypes.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdint.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdint.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_wchar_limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/android/api-level.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs_elf.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/syslimits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/internal_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/syslimits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page_32.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdlib.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/string.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/malloc.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/alloca.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/strings.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/posix_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/stddef.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/compiler.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/asm/posix_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/features.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types_32.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/kernel.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/sysmacros.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/memory.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/assert.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdbool.h:
+
+../../src/common/mythread.h:
+
+../../src/common/sysdefs.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/time.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/time.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/pthread.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/time.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/siginfo.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/siginfo.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/signal.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/signal.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/signal.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/sigcontext.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sched.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno-base.h:
+
+../../src/liblzma/api/lzma.h:
+
+../../src/liblzma/api/lzma/version.h:
+
+../../src/liblzma/api/lzma/base.h:
+
+../../src/liblzma/api/lzma/vli.h:
+
+../../src/liblzma/api/lzma/check.h:
+
+../../src/liblzma/api/lzma/filter.h:
+
+../../src/liblzma/api/lzma/bcj.h:
+
+../../src/liblzma/api/lzma/delta.h:
+
+../../src/liblzma/api/lzma/lzma12.h:
+
+../../src/liblzma/api/lzma/container.h:
+
+../../src/liblzma/api/lzma/stream_flags.h:
+
+../../src/liblzma/api/lzma/block.h:
+
+../../src/liblzma/api/lzma/index.h:
+
+../../src/liblzma/api/lzma/index_hash.h:
+
+../../src/liblzma/api/lzma/hardware.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/stat.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/stat.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/endian.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/endian.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/endian.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/locale.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/stdio.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdarg.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/unistd.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/select.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/sysconf.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/capability.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/pathconf.h:
+
+../../src/common/tuklib_gettext.h:
+
+../../src/common/tuklib_common.h:
+
+../../src/common/tuklib_config.h:
+
+../../src/common/tuklib_progname.h:
+
+../../src/common/tuklib_exit.h:
+
+../../src/common/tuklib_mbstr.h:
+
+main.h:
+
+mytime.h:
+
+coder.h:
+
+message.h:
+
+args.h:
+
+hardware.h:
+
+file_io.h:
+
+options.h:
+
+signals.h:
+
+suffix.h:
+
+util.h:
+
+list.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/fcntl.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/fcntl.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/fcntl.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/fcntl.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/poll.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/poll.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/poll.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/poll.h:
+
+../../src/common/tuklib_open_stdxxx.h:

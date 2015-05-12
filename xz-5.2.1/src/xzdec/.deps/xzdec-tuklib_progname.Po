@@ -1,0 +1,148 @@
+xzdec-tuklib_progname.o: ../common/tuklib_progname.c \
+ ../common/tuklib_progname.h ../common/tuklib_common.h \
+ ../common/tuklib_config.h ../common/sysdefs.h ../../config.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stddef.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/inttypes.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdint.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdint.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_wchar_limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/android/api-level.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs_elf.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/syslimits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/internal_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/limits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/syslimits.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page_32.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdlib.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/string.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/malloc.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/alloca.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/strings.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/posix_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/stddef.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/compiler.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/asm/posix_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/features.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types_32.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/types.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/kernel.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/sysmacros.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/memory.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/assert.h \
+ /private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdbool.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno.h \
+ /private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno-base.h
+
+../common/tuklib_progname.h:
+
+../common/tuklib_common.h:
+
+../common/tuklib_config.h:
+
+../common/sysdefs.h:
+
+../../config.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stddef.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/inttypes.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdint.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdint.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/_wchar_limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/android/api-level.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/cdefs_elf.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/syslimits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/internal_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/limits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/syslimits.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/page_32.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/stdlib.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/string.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/malloc.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/alloca.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/strings.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/posix_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/stddef.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/compiler.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include-fixed/asm/posix_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/features.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/posix_types_32.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/types.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/machine/kernel.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/sys/sysmacros.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/memory.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/assert.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../lib/gcc/i686-linux-android/4.6/include/stdbool.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/linux/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno.h:
+
+/private/tmp/my-android-toolchain-x86/bin/../sysroot/usr/include/asm-generic/errno-base.h:

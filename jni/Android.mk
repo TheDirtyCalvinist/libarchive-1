@@ -4,8 +4,6 @@ ARCHIVE_PATH := ../archive
 
 include $(CLEAR_VARS)
 
-
-
 FILE_LIST := $(wildcard ${LOCAL_PATH}/../archive/*.c)
 
 FILE_LIST += ${BZ2_PATH}/blocksort.c\
@@ -26,7 +24,7 @@ FILE_LIST += ${BZ2_PATH}/blocksort.c\
 LOCAL_MODULE := libarchive
 LOCAL_CFLAGS += -DPLATFORM_CONFIG_H=\"libarchive_custom_config.h\"
 LOCAL_C_INCLUDES += jni/${BZ2_PATH}
+LOCAL_C_INCLUDES += ${TARGET_ARCH_ABI}/lzma/include
 LOCAL_SRC_FILES := $(FILE_LIST:$(LOCAL_PATH)/%=%)
-
 
 include $(BUILD_STATIC_LIBRARY)
