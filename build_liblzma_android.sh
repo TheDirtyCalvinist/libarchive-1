@@ -19,7 +19,7 @@ cd $XZ_SRC_PATH
 ./$configure --prefix=${HOME}/lzma --host=arm-linux-androideabi --target=arm-linux-androideabi --enable-static
 make clean install
 
-mkdir ${HOME}/armeabi-v7a
+mkdir ${HOME}/armeabi-v7a~
 cp -r ${HOME}/lzma  ${HOME}/armeabi-v7a/.
 
 # then x86

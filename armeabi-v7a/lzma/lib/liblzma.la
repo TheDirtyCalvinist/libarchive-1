@@ -38,4 +38,4 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/Users/aaronhaser/libarchive-1/xz-5.2.1/../lzma/lib'
+libdir='/Users/aaronhaser/libarchive-1/lzma/lib'

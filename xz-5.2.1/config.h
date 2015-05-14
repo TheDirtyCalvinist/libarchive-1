@@ -12,30 +12,30 @@
 /* #undef ENABLE_NLS */
 
 /* Define to 1 if bswap_16 is available. */
-#define HAVE_BSWAP_16 1
+/* #undef HAVE_BSWAP_16 */
 
 /* Define to 1 if bswap_32 is available. */
-#define HAVE_BSWAP_32 1
+/* #undef HAVE_BSWAP_32 */
 
 /* Define to 1 if bswap_64 is available. */
-#define HAVE_BSWAP_64 1
+/* #undef HAVE_BSWAP_64 */
 
 /* Define to 1 if you have the <byteswap.h> header file. */
-#define HAVE_BYTESWAP_H 1
+/* #undef HAVE_BYTESWAP_H */
 
 /* Define to 1 if the system has the type `CC_SHA256_CTX'. */
-/* #undef HAVE_CC_SHA256_CTX */
+#define HAVE_CC_SHA256_CTX 1
 
 /* Define to 1 if you have the `CC_SHA256_Init' function. */
-/* #undef HAVE_CC_SHA256_INIT */
+#define HAVE_CC_SHA256_INIT 1
 
 /* Define to 1 if you have the MacOS X function CFLocaleCopyCurrent in the
    CoreFoundation framework. */
-/* #undef HAVE_CFLOCALECOPYCURRENT */
+#define HAVE_CFLOCALECOPYCURRENT 1
 
 /* Define to 1 if you have the MacOS X function CFPreferencesCopyAppValue in
    the CoreFoundation framework. */
-/* #undef HAVE_CFPREFERENCESCOPYAPPVALUE */
+#define HAVE_CFPREFERENCESCOPYAPPVALUE 1
 
 /* Define to 1 if crc32 integrity check is enabled. */
 #define HAVE_CHECK_CRC32 1
@@ -47,10 +47,10 @@
 #define HAVE_CHECK_SHA256 1
 
 /* Define to 1 if you have the `clock_gettime' function. */
-#define HAVE_CLOCK_GETTIME 1
+/* #undef HAVE_CLOCK_GETTIME */
 
 /* Define to 1 if you have the <CommonCrypto/CommonDigest.h> header file. */
-/* #undef HAVE_COMMONCRYPTO_COMMONDIGEST_H */
+#define HAVE_COMMONCRYPTO_COMMONDIGEST_H 1
 
 /* Define if the GNU dcgettext() function is already present or preinstalled.
    */
@@ -58,7 +58,7 @@
 
 /* Define to 1 if you have the declaration of `CLOCK_MONOTONIC', and to 0 if
    you don't. */
-#define HAVE_DECL_CLOCK_MONOTONIC 1
+#define HAVE_DECL_CLOCK_MONOTONIC 0
 
 /* Define to 1 if you have the declaration of `program_invocation_name', and
    to 0 if you don't. */
@@ -128,7 +128,7 @@
 /* #undef HAVE_FUTIMENS */
 
 /* Define to 1 if you have the `futimes' function. */
-/* #undef HAVE_FUTIMES */
+#define HAVE_FUTIMES 1
 
 /* Define to 1 if you have the `futimesat' function. */
 /* #undef HAVE_FUTIMESAT */
@@ -143,7 +143,7 @@
 /* #undef HAVE_GETTEXT */
 
 /* Define if you have the iconv() function and it works. */
-/* #undef HAVE_ICONV */
+#define HAVE_ICONV 1
 
 /* Define to 1 if you have the <immintrin.h> header file. */
 #define HAVE_IMMINTRIN_H 1
@@ -182,7 +182,7 @@
 #define HAVE_OPTRESET 1
 
 /* Define to 1 if you have the `pipe2' function. */
-#define HAVE_PIPE2 1
+/* #undef HAVE_PIPE2 */
 
 /* Define to 1 if you have the `posix_fadvise' function. */
 /* #undef HAVE_POSIX_FADVISE */
@@ -191,7 +191,7 @@
 /* #undef HAVE_PTHREAD_CONDATTR_SETCLOCK */
 
 /* Have PTHREAD_PRIO_INHERIT. */
-/* #undef HAVE_PTHREAD_PRIO_INHERIT */
+#define HAVE_PTHREAD_PRIO_INHERIT 1
 
 /* Define to 1 if you have the `SHA256Init' function. */
 /* #undef HAVE_SHA256INIT */
@@ -230,10 +230,10 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if `st_atimensec' is a member of `struct stat'. */
-#define HAVE_STRUCT_STAT_ST_ATIMENSEC 1
+/* #undef HAVE_STRUCT_STAT_ST_ATIMENSEC */
 
 /* Define to 1 if `st_atimespec.tv_nsec' is a member of `struct stat'. */
-/* #undef HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC */
+#define HAVE_STRUCT_STAT_ST_ATIMESPEC_TV_NSEC 1
 
 /* Define to 1 if `st_atim.st__tim.tv_nsec' is a member of `struct stat'. */
 /* #undef HAVE_STRUCT_STAT_ST_ATIM_ST__TIM_TV_NSEC */
@@ -272,7 +272,7 @@
 /* #undef HAVE_UTIME */
 
 /* Define to 1 if you have the `utimes' function. */
-#define HAVE_UTIMES 1
+/* #undef HAVE_UTIMES */
 
 /* Define to 1 or 0, depending whether the compiler supports simple visibility
    declarations. */
@@ -287,7 +287,8 @@
 /* Define to 1 if _mm_movemask_epi8 is available. */
 #define HAVE__MM_MOVEMASK_EPI8 1
 
-/* Define to the sub-directory where libtool stores uninstalled libraries. */
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
 #define LT_OBJDIR ".libs/"
 
 /* Define to 1 when using POSIX threads (pthreads). */
@@ -345,11 +346,11 @@
 
 /* Define to 1 if the number of available CPU cores can be detected with
    sysconf(_SC_NPROCESSORS_ONLN) or sysconf(_SC_NPROC_ONLN). */
-#define TUKLIB_CPUCORES_SYSCONF 1
+/* #undef TUKLIB_CPUCORES_SYSCONF */
 
 /* Define to 1 if the number of available CPU cores can be detected with
    sysctl(). */
-/* #undef TUKLIB_CPUCORES_SYSCTL */
+#define TUKLIB_CPUCORES_SYSCTL 1
 
 /* Define to 1 if the system supports fast unaligned access to 16-bit and
    32-bit integers. */
@@ -373,11 +374,11 @@
 
 /* Define to 1 if the amount of physical memory can be detected with
    sysconf(_SC_PAGESIZE) and sysconf(_SC_PHYS_PAGES). */
-#define TUKLIB_PHYSMEM_SYSCONF 1
+/* #undef TUKLIB_PHYSMEM_SYSCONF */
 
 /* Define to 1 if the amount of physical memory can be detected with sysctl().
    */
-/* #undef TUKLIB_PHYSMEM_SYSCTL */
+#define TUKLIB_PHYSMEM_SYSCTL 1
 
 /* Define to 1 if the amount of physical memory can be detected with Linux
    sysinfo(). */

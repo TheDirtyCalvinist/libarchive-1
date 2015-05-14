@@ -22,7 +22,7 @@ srcdir = .
 top_srcdir = ..
 
 
-prefix = /Users/aaronhaser/libarchive-1/lzma
+prefix = /Users/aaronhaser/libarchive-1/xz-5.2.1/iPhoneFramework/iPhoneSimulator
 exec_prefix = ${prefix}
 datarootdir = ${prefix}/share
 datadir = ${datarootdir}

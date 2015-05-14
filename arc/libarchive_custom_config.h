@@ -273,6 +273,7 @@
 
 /* Define to 1 if you have the <lzma.h> header file. */
 /* #undef HAVE_LZMA_H */
+#define HAVE_LZMA_H 1
 
 /* Define to 1 if you have the `MD5Init' function. */
 #undef HAVE_MD5INIT
@@ -519,6 +520,8 @@
 
 /* Define to 1 if you have the <sys/xattr.h> header file. */
 #define HAVE_SYS_XATTR_H 1
+
+#define HAVE_SYS_UTSNAME_H 1
 
 /* Define to 1 if you have the `timegm' function. */
 #define HAVE_TIMEGM 1
